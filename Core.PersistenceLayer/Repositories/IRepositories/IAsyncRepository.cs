@@ -10,9 +10,9 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Core.PersistenceLayer.Repositories.Repositories;
+namespace Core.PersistenceLayer.Repositories.IRepositories;
 
-public interface IAsyncRepository<TEntity, TEntityId> : IQueryable<TEntity> where TEntity : Entity<TEntityId>
+public interface IAsyncRepository<TEntity, TEntityId> : IQuery<TEntity> where TEntity : Entity<TEntityId>
 {
     Task<TEntity?> GetAsync(
         Expression<Func<TEntity, bool>> predicate,
@@ -20,7 +20,7 @@ public interface IAsyncRepository<TEntity, TEntityId> : IQueryable<TEntity> wher
         bool withDeleted = false,
         bool enableTracking = true,
         CancellationToken cancellationToken = default);
-    Task<IPaginate<TEntity>> GetListAsync(
+    Task<Paginate<TEntity>> GetListAsync(
         Expression<Func<TEntity, bool>>? predicate = null,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null,

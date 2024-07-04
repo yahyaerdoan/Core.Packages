@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Core.PersistenceLayer.Repositories.Repositories
+namespace Core.PersistenceLayer.Repositories.IRepositories
 {
     public interface IQuery<T>
     {
