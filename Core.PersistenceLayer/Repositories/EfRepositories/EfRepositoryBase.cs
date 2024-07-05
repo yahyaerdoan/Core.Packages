@@ -27,7 +27,7 @@ namespace Core.PersistenceLayer.Repositories.EfRepositories
 
         public async Task<TEntity> AddAsync(TEntity entity)
         {
-            entity.CreatedDate = DateTime.UtcNow;
+            entity.CreatedDate = DateTimeOffset.Now;
             await Context.AddAsync(entity);
             await Context.SaveChangesAsync();
             return entity;
@@ -114,7 +114,7 @@ namespace Core.PersistenceLayer.Repositories.EfRepositories
 
         public async Task<TEntity> UpdateAsync(TEntity entity)
         {
-            entity.UpdatedDate = DateTime.UtcNow;
+            entity.UpdatedDate = DateTimeOffset.Now;
             Context.Update(entity);
             await Context.SaveChangesAsync();
             return entity;
@@ -124,7 +124,7 @@ namespace Core.PersistenceLayer.Repositories.EfRepositories
         {
             foreach (TEntity entity in entities)
             {
-                entity.UpdatedDate = DateTime.UtcNow;
+                entity.UpdatedDate = DateTimeOffset.Now;
                 Context.UpdateRange(entity);
                 await Context.SaveChangesAsync();
             }
