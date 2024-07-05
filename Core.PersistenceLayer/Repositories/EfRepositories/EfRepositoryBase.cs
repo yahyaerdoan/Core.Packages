@@ -14,7 +14,7 @@ using System.Reflection;
 namespace Core.PersistenceLayer.Repositories.EfRepositories
 {
     public class EfRepositoryBase<TEntity, TEntityId, TContext> :
-        IAsyncRepository<TEntity, TEntityId> //IRepository<TEntity, TEntityId>  
+        IAsyncRepository<TEntity, TEntityId> //,IRepository<TEntity, TEntityId>  
         where TEntity : Entity<TEntityId>
         where TContext : DbContext
     {
