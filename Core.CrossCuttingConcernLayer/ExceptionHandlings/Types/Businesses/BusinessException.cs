@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Types;
+namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Types.Businesses;
 
 public class BusinessException : Exception
 {
-    public BusinessException(){ }
+    public BusinessException() { }
     public BusinessException(string? message) : base(message) { }
-    public BusinessException(string? message, Exception? innerException) : base(message, innerException) { }      
+    public BusinessException(string? message, Exception? innerException) : base(message, innerException) { }
 }
