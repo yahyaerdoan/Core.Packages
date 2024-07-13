@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Core.ApplicationLayer.Pipelines.Cachings.Concretions;
 
-public class CacheRemovingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICacheRemoverRequest
+public class CacheRemovingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICacheRemoveRequest
 {
     private readonly IDistributedCache _distributedCache;
 

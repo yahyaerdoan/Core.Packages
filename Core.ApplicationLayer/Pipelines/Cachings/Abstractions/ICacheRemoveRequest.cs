@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace Core.ApplicationLayer.Pipelines.Cachings.Abstractions;
 
-public interface ICachableRequest
+public interface ICacheRemoveRequest
 {
     string CacheKey { get; }
     string? CacheGroupKey { get; }
     bool ByPassCache { get; }
-    TimeSpan? SlidingExpiration { get; }
 }

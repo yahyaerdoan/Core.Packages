@@ -12,13 +12,13 @@ using System.Threading.Tasks;
 
 namespace Core.ApplicationLayer.Pipelines.Cachings.Concretions;
 
-public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICachableRequest
+public class CacheAddingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICacheAddRequest
 {
     private readonly CacheSettings _cacheSettings;
     private readonly IDistributedCache _distributedCache;
-    private readonly ILogger<CachingBehavior<TRequest, TResponse>> _logger;
+    private readonly ILogger<CacheAddingBehavior<TRequest, TResponse>> _logger;
 
-    public CachingBehavior(IDistributedCache distributedCache, IConfiguration configuration, ILogger<CachingBehavior<TRequest, TResponse>> logger)
+    public CacheAddingBehavior(IDistributedCache distributedCache, IConfiguration configuration, ILogger<CacheAddingBehavior<TRequest, TResponse>> logger)
     {
         _cacheSettings = configuration.GetSection("CacheSettings").Get<CacheSettings>() ?? throw new InvalidOperationException();
         _distributedCache = distributedCache;
