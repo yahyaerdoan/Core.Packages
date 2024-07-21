@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Core.ApplicationLayer.Pipelines.Cachings.Concretions;
+namespace Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheBehaviors;
 
 public class CacheRemovingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICacheRemoveRequest
 {
@@ -42,9 +42,9 @@ public class CacheRemovingBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
             }
         }
 
-        if (response != null) 
+        if (response != null)
         {
-            await  _distributedCache.RemoveAsync(request.CacheKey, cancellationToken);
+            await _distributedCache.RemoveAsync(request.CacheKey, cancellationToken);
         }
         return response;
     }

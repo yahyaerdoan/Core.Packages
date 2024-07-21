@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Middleware;
+namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Middlewares;
 
 public class ExceptionMiddleware
 {

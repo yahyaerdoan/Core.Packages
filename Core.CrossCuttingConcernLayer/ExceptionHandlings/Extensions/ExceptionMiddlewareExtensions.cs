@@ -1,4 +1,4 @@
-﻿using Core.CrossCuttingConcernLayer.ExceptionHandlings.Middleware;
+﻿using Core.CrossCuttingConcernLayer.ExceptionHandlings.Middlewares;
 using Microsoft.AspNetCore.Builder;
 using System;
 using System.Collections.Generic;

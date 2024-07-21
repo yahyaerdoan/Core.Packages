@@ -17,4 +17,8 @@
     <ProjectReference Include="..\Core.PersistenceLayer\Core.PersistenceLayer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Pipelines\Validations\Abstractions\" />
+  </ItemGroup>
+
 </Project>
