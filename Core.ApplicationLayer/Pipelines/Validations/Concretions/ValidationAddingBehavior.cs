@@ -11,11 +11,11 @@ using ValidationException = Core.CrossCuttingConcernLayer.ExceptionHandlings.Typ
 
 namespace Core.ApplicationLayer.Pipelines.Validations.Concretions;
 
-public class RequestValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>
+public class ValidationAddingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>
 {
     private readonly IEnumerable<IValidator<TRequest>> _validator;
 
-    public RequestValidationBehavior(IEnumerable<IValidator<TRequest>> validator)
+    public ValidationAddingBehavior(IEnumerable<IValidator<TRequest>> validator)
     {
         _validator = validator;
     }
