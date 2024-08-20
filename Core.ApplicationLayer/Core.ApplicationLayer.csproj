@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Core.CrossCuttingConcernLayer\Core.CrossCuttingConcernLayer.csproj" />
     <ProjectReference Include="..\Core.PersistenceLayer\Core.PersistenceLayer.csproj" />
+    <ProjectReference Include="..\Core.SecurityLayer\Core.SecurityLayer.csproj" />
   </ItemGroup>
 
   <ItemGroup>
