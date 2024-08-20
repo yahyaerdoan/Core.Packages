@@ -7,24 +7,23 @@ using System.Threading.Tasks;
 
 namespace Core.SecurityLayer.Entities;
 
-public class OtpAuthenticator : Entity<int>
+public class OneTimePasswordAuthenticator : Entity<int>
 {
-  
-
     public int UserId { get; set; }
     public byte[] SecretKey { get; set; }
     public bool IsVerified { get; set; }
-    public OtpAuthenticator()
+    public virtual User User { get; set; } = null!;
+    public OneTimePasswordAuthenticator()
     {
         SecretKey = Array.Empty<byte>();
     }
-    public OtpAuthenticator(int userId, byte[] secretKey, bool isVerified)
+    public OneTimePasswordAuthenticator(int userId, byte[] secretKey, bool isVerified)
     {
         UserId = userId;
         SecretKey = secretKey;
         IsVerified = isVerified;
     }
-    public OtpAuthenticator(int id, int userId, byte[] secretKey, bool isVerified) : base(id)
+    public OneTimePasswordAuthenticator(int id, int userId, byte[] secretKey, bool isVerified) : base(id)
     {
         UserId = userId;
         SecretKey = secretKey;
