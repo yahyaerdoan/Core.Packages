@@ -13,6 +13,9 @@ public class TokenOption
     public int AccessTokenExpiration { get; set; }
     public string SecurityKey { get; set; }
     public int RefreshTokenTTL { get; set; }
+    /// <summary>
+    /// The term refreshTokenTTL typically refers to the "Time-To-Live" (TTL) of a refresh token in the context of authentication systems, particularly those using JWT (JSON Web Tokens).
+    /// </summary>
 
     public TokenOption()
     {
