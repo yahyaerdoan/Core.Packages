@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Extensions;

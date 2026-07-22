@@ -1,34 +1,34 @@
 ﻿using Core.SecurityLayer.OneTimePasswordAuthenticators.Abstractions;
+
 using OtpNet;
-namespace Core.SecurityLayer.OneTimePasswordAuthenticators.Concretions.OneTimePasswordNet
+namespace Core.SecurityLayer.OneTimePasswordAuthenticators.Concretions.OneTimePasswordNet;
+
+public class OtpNetOneTimePasswordAuthenticatorHelper : IOneTimePasswordAuthenticatorHelper
 {
-    public class OtpNetOneTimePasswordAuthenticatorHelper : IOneTimePasswordAuthenticatorHelper
+    public Task<byte[]> GenerateSecretKey()
     {
-        public Task<byte[]> GenerateSecretKey()
-        {
-            byte[] key = KeyGeneration.GenerateRandomKey(20);
+        byte[] key = KeyGeneration.GenerateRandomKey(20);
 
-            string base32String = Base32Encoding.ToString(key);
-            byte[] base32Bytes = Base32Encoding.ToBytes(base32String);
+        string base32String = Base32Encoding.ToString(key);
+        byte[] base32Bytes = Base32Encoding.ToBytes(base32String);
 
-            return Task.FromResult(base32Bytes);
-        }
+        return Task.FromResult(base32Bytes);
+    }
 
-        public Task<string> ConvertSecretKeyToString(byte[] secretKey)
-        {
-            string base32String = Base32Encoding.ToString(secretKey);
-            return Task.FromResult(base32String);
-        }
+    public Task<string> ConvertSecretKeyToString(byte[] secretKey)
+    {
+        string base32String = Base32Encoding.ToString(secretKey);
+        return Task.FromResult(base32String);
+    }
 
-        public Task<bool> VerifyCode(byte[] secretKey, string code)
-        {
-            Totp totp = new(secretKey);
+    public Task<bool> VerifyCode(byte[] secretKey, string code)
+    {
+        Totp totp = new(secretKey);
 
-            string totpCode = totp.ComputeTotp(DateTime.UtcNow);
+        string totpCode = totp.ComputeTotp(DateTime.UtcNow);
 
-            bool result = totpCode == code;
+        bool result = totpCode == code;
 
-            return Task.FromResult(result);
-        }
+        return Task.FromResult(result);
     }
 }

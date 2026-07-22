@@ -7,12 +7,11 @@ public static class IQueryablePaginateExtensions
     public static Paginate<T> ToPaginate<T>(
         this IQueryable<T> source,
         int index,
-        int size,
-        CancellationToken cancellationToken = default)
+        int size)
     {
         int count = source.Count();
-        List<T> items = source.Skip(index * size).Take(size).ToList();
-        Paginate<T> result = new Paginate<T>()
+        List<T> items = [.. source.Skip(index * size).Take(size)];
+        Paginate<T> result = new()
         {
             Index = index,
             Count = count,

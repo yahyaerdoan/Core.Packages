@@ -1,15 +1,17 @@
-﻿using Core.PersistenceLayer.Dynamics.Dynamic;
+﻿using System.Globalization;
 using System.Linq.Dynamic.Core;
 using System.Text;
+
+using Core.PersistenceLayer.Dynamics.Dynamic;
 
 namespace Core.PersistenceLayer.Dynamics.Extensions;
 
 public static class IQueryableDynamicFilterExtensions
 {
-    private static readonly string[] _orders = { "asc", "desc" };
-    private static readonly string[] _logics = { "and", "or" };
+    private static readonly string[] Orders = ["asc", "desc"];
+    private static readonly string[] Logics = ["and", "or"];
 
-    private static readonly IDictionary<string, string> _operators = new Dictionary<string, string>
+    private static readonly Dictionary<string, string> Operators = new()
     {
         { "eq", "=" },
         { "neq", "!=" },
@@ -37,7 +39,7 @@ public static class IQueryableDynamicFilterExtensions
     private static IQueryable<T> Filter<T>(IQueryable<T> queryable, Filter filter)
     {
         IList<Filter> filters = GetAllFilters(filter);
-        string?[] values = filters.Select(f => f.Value).ToArray();
+        string?[] values = [.. filters.Select(f => f.Value)];
         string where = Transform(filter, filters);
         if (!string.IsNullOrEmpty(where) && values != null)
             queryable = queryable.Where(where, values);
@@ -51,7 +53,7 @@ public static class IQueryableDynamicFilterExtensions
         {
             if (string.IsNullOrEmpty(item.Field))
                 throw new ArgumentException("Invalid Field");
-            if (string.IsNullOrEmpty(item.Direction) || !_orders.Contains(item.Direction))
+            if (string.IsNullOrEmpty(item.Direction) || !Orders.Contains(item.Direction))
                 throw new ArgumentException("Invalid Order Type");
         }
 
@@ -66,7 +68,7 @@ public static class IQueryableDynamicFilterExtensions
 
     public static IList<Filter> GetAllFilters(Filter filter)
     {
-        List<Filter> filters = new();
+        List<Filter> filters = [];
         GetFilters(filter, filters);
         return filters;
     }
@@ -83,30 +85,29 @@ public static class IQueryableDynamicFilterExtensions
     {
         if (string.IsNullOrEmpty(filter.Field))
             throw new ArgumentException("Invalid Field");
-        if (string.IsNullOrEmpty(filter.Operator) || !_operators.ContainsKey(filter.Operator))
+        if (string.IsNullOrEmpty(filter.Operator) || !Operators.TryGetValue(filter.Operator, out string? comparison))
             throw new ArgumentException("Invalid Operator");
 
         int index = filters.IndexOf(filter);
-        string comparison = _operators[filter.Operator];
         StringBuilder where = new();
 
         if (!string.IsNullOrEmpty(filter.Value))
         {
             if (filter.Operator == "doesnotcontain")
-                where.Append($"(!np({filter.Field}).{comparison}(@{index.ToString()}))");
+                where.Append(CultureInfo.InvariantCulture, $"(!np({filter.Field}).{comparison}(@{index}))");
             else if (comparison is "StartsWith" or "EndsWith" or "Contains")
-                where.Append($"(np({filter.Field}).{comparison}(@{index.ToString()}))");
+                where.Append(CultureInfo.InvariantCulture, $"(np({filter.Field}).{comparison}(@{index}))");
             else
-                where.Append($"np({filter.Field}) {comparison} @{index.ToString()}");
+                where.Append(CultureInfo.InvariantCulture, $"np({filter.Field}) {comparison} @{index}");
         }
         else if (filter.Operator is "isnull" or "isnotnull")
         {
-            where.Append($"np({filter.Field}) {comparison}");
+            where.Append(CultureInfo.InvariantCulture, $"np({filter.Field}) {comparison}");
         }
 
         if (filter.Logic is not null && filter.Filters is not null && filter.Filters.Any())
         {
-            if (!_logics.Contains(filter.Logic))
+            if (!Logics.Contains(filter.Logic))
                 throw new ArgumentException("Invalid Logic");
             return $"{where} {filter.Logic} ({string.Join(separator: $" {filter.Logic} ", value: filter.Filters.Select(f => Transform(f, filters)).ToArray())})";
         }

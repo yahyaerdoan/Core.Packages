@@ -10,7 +10,7 @@ public class OneTimePasswordAuthenticator : Entity<int>
     public virtual User User { get; set; } = null!;
     public OneTimePasswordAuthenticator()
     {
-        SecretKey = Array.Empty<byte>();
+        SecretKey = [];
     }
     public OneTimePasswordAuthenticator(int userId, byte[] secretKey, bool isVerified)
     {

@@ -1,0 +1,15 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Turn .editorconfig style rules (IDE0xxx) into real build warnings -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Enable the full set of built-in .NET analyzers (CAxxxx) at the latest recommended severity -->
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+
+    <!-- Surface nullable-reference warnings project-wide unless a project opts out -->
+    <Nullable Condition="'$(Nullable)' == ''">enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -1,14 +1,16 @@
-﻿using Core.PersistenceLayer.Dynamics.Dynamic;
+﻿using System.Linq.Expressions;
+
+using Core.PersistenceLayer.Dynamics.Dynamic;
 using Core.PersistenceLayer.Pagings.Paging;
 using Core.PersistenceLayer.Repositories.Entities;
+
 using Microsoft.EntityFrameworkCore.Query;
-using System.Linq.Expressions;
 
 namespace Core.PersistenceLayer.Repositories.IRepositories;
 
 public interface IRepository<TEntity, TEntityId> : IQuery<TEntity> where TEntity : Entity<TEntityId>
 {
-    TEntity? Get(
+    TEntity? GetEntity(
         Expression<Func<TEntity, bool>> predicate,
         Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null,
         bool withDeleted = false,

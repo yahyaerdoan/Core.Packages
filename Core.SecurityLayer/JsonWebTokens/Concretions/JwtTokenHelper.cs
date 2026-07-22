@@ -1,12 +1,15 @@
-﻿using Core.SecurityLayer.Encryptions;
-using Core.SecurityLayer.Entities;
-using Core.SecurityLayer.Extensions;
-using Core.SecurityLayer.JsonWebTokens.Abstractions;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
+﻿using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
+
+using Core.SecurityLayer.Encryptions;
+using Core.SecurityLayer.Entities;
+using Core.SecurityLayer.Extensions;
+using Core.SecurityLayer.JsonWebTokens.Abstractions;
+
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Core.SecurityLayer.JsonWebTokens.Concretions;
 
@@ -21,7 +24,7 @@ public class JwtTokenHelper : IJwtTokenHelper
         Configuration = configuration;
         const string configurationSection = "TokenOptions";
         _tokenOptions = Configuration.GetSection(configurationSection).Get<TokenOption>()
-            ?? throw new NullReferenceException($"\"{configurationSection}\" section cannot found in configuration.");
+            ?? throw new InvalidOperationException($"\"{configurationSection}\" section cannot found in configuration.");
     }
 
     public RefreshToken CreateRefreshToken(User user, string ipAddress)
@@ -60,17 +63,17 @@ public class JwtTokenHelper : IJwtTokenHelper
         return jwtSecurityToken;
     }
 
-    private IEnumerable<Claim> SetClaims(User user, IList<OperationClaim> operationClaims)
+    private static List<Claim> SetClaims(User user, IList<OperationClaim> operationClaims)
     {
-        List<Claim> claims = new();
-        claims.AddNameIdentifier(user.Id.ToString());
+        List<Claim> claims = [];
+        claims.AddNameIdentifier(user.Id.ToString(CultureInfo.InvariantCulture));
         claims.AddEmail(user.Email);
         claims.AddName($"{user.FirstName} {user.LastName}");
-        claims.AddRoles(operationClaims.Select(c => c.Name).ToArray());
+        claims.AddRoles([.. operationClaims.Select(c => c.Name)]);
         return claims;
     }
 
-    private string RandomRefreshToken()
+    private static string RandomRefreshToken()
     {
         byte[] numberByte = new byte[32];
         using var random = RandomNumberGenerator.Create();

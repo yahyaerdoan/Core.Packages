@@ -1,25 +1,22 @@
 ﻿using Core.CrossCuttingConcernLayer.ExceptionHandlings.Types.Validations;
+
 using FluentValidation;
+
 using MediatR;
+
 using ValidationException = Core.CrossCuttingConcernLayer.ExceptionHandlings.Types.Validations.ValidationException;
 
 
 namespace Core.ApplicationLayer.Pipelines.Validations.Concretions;
 
-public class ValidationAddingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>
+public class ValidationAddingBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validator)
+    : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>
 {
-    private readonly IEnumerable<IValidator<TRequest>> _validator;
-
-    public ValidationAddingBehavior(IEnumerable<IValidator<TRequest>> validator)
-    {
-        _validator = validator;
-    }
-
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         ValidationContext<object> context = new(request);
 
-        IEnumerable<ValidationExceptionModel> errors = _validator
+        IEnumerable<ValidationExceptionModel> errors = [.. validator
             .Select(validator => validator.Validate(context))
             .SelectMany(result => result.Errors)
             .Where(failure => failure != null)
@@ -27,10 +24,10 @@ public class ValidationAddingBehavior<TRequest, TResponse> : IPipelineBehavior<T
             {
                 Property = propertyName,
                 Errors = errors.Select(e => e.ErrorMessage)
-            }).ToList();
+            })];
         if (errors.Any())
             throw new ValidationException(errors);
-        TResponse response = await next();
+        TResponse response = await next(cancellationToken);
         return response;
     }
 }

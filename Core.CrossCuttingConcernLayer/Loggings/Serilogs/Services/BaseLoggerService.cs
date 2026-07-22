@@ -4,12 +4,9 @@ namespace Core.CrossCuttingConcernLayer.Loggings.Serilogs.Services;
 
 public abstract class BaseLoggerService
 {
-    protected ILogger Logger;
+    protected ILogger Logger { get; set; } = null!;
 
-    protected BaseLoggerService()
-    {
-        Logger = null;
-    }
+    protected BaseLoggerService() { }
 
     protected BaseLoggerService(ILogger logger)
     {

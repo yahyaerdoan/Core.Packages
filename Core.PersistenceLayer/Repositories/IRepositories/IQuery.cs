@@ -1,7 +1,6 @@
-﻿namespace Core.PersistenceLayer.Repositories.IRepositories
+﻿namespace Core.PersistenceLayer.Repositories.IRepositories;
+
+public interface IQuery<T>
 {
-    public interface IQuery<T>
-    {
-        IQueryable<T> Query();
-    }
+    IQueryable<T> Query();
 }

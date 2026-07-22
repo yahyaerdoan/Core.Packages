@@ -4,11 +4,5 @@ namespace Core.ApplicationLayer.Responses.GetList;
 
 public class GetListResponse<T> : BasePageableModel
 {
-    private IList<T> items;
-
-    public IList<T> Items
-    {
-        get => items ??= new List<T>();
-        set => items = value;
-    }
+    public IList<T> Items { get; set; } = [];
 }

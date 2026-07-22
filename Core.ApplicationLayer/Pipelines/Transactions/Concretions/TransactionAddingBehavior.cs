@@ -1,6 +1,8 @@
-﻿using Core.ApplicationLayer.Pipelines.Transactions.Abstractions;
+﻿using System.Transactions;
+
+using Core.ApplicationLayer.Pipelines.Transactions.Abstractions;
+
 using MediatR;
-using System.Transactions;
 
 namespace Core.ApplicationLayer.Pipelines.Transactions.Concretions;
 
@@ -12,7 +14,7 @@ public class TransactionAddingBehavior<TRequest, TResponse> : IPipelineBehavior<
         TResponse response;
         try
         {
-            response = await next();
+            response = await next(cancellationToken);
             transactionScope.Complete();
         }
         catch (Exception)

@@ -1,5 +1,6 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using System.Text;
+﻿using System.Text;
+
+using Microsoft.IdentityModel.Tokens;
 
 namespace Core.SecurityLayer.Encryptions;
 

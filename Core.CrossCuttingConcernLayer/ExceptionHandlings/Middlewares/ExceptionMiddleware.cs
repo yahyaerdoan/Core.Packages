@@ -1,31 +1,22 @@
-﻿using Core.CrossCuttingConcernLayer.ExceptionHandlings.Handlers;
+﻿using System.Text.Json;
+
+using Core.CrossCuttingConcernLayer.ExceptionHandlings.Handlers;
 using Core.CrossCuttingConcernLayer.Loggings.Parameters;
 using Core.CrossCuttingConcernLayer.Loggings.Serilogs.Services;
+
 using Microsoft.AspNetCore.Http;
-using System.Text.Json;
 
 namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Middlewares;
 
-public class ExceptionMiddleware
+public class ExceptionMiddleware(RequestDelegate next, IHttpContextAccessor httpContextAccessor, BaseLoggerService baseLoggerService)
 {
-    private readonly RequestDelegate _next;
-    private readonly HttpExceptionHandler _httpExceptionHandler;
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly BaseLoggerService _baseLoggerService;
-
-    public ExceptionMiddleware(RequestDelegate next, IHttpContextAccessor httpContextAccessor, BaseLoggerService baseLoggerService)
-    {
-        _next = next;
-        _httpExceptionHandler = new HttpExceptionHandler();
-        _httpContextAccessor = httpContextAccessor;
-        _baseLoggerService = baseLoggerService;
-    }
+    private readonly HttpExceptionHandler _httpExceptionHandler = new();
 
     public async Task Invoke(HttpContext httpContext)
     {
         try
         {
-            await _next(httpContext);
+            await next(httpContext);
         }
         catch (Exception exception)
         {
@@ -36,20 +27,17 @@ public class ExceptionMiddleware
 
     private Task LogException(HttpContext httpContext, Exception exception)
     {
-        List<LogParameter> logParameters = new()
-        {
-            new LogParameter { Type = httpContext.GetType().Name, Value = exception.ToString() }
-        };
+        List<LogParameter> logParameters = [new LogParameter { Type = httpContext.GetType().Name, Value = exception.ToString() }];
 
-        LogDetailWithException logDetail = new()
+        ExceptionLogDetail logDetail = new()
         {
             ExceptionMessage = exception.Message,
-            MethodName = _next.Method.Name,
+            MethodName = next.Method.Name,
             Parameters = logParameters,
-            User = _httpContextAccessor.HttpContext?.User.Identity?.Name ?? "?"
+            User = httpContextAccessor.HttpContext?.User.Identity?.Name ?? "?"
         };
 
-        _baseLoggerService.Error(JsonSerializer.Serialize(logDetail));
+        baseLoggerService.Error(JsonSerializer.Serialize(logDetail));
 
         return Task.CompletedTask;
     }

@@ -2,13 +2,12 @@
 
 public class Entity<TId> : IEntityTimeStamps
 {
-    public TId Id { get; set; }
+    public TId Id { get; set; } = default!;
     public DateTimeOffset CreatedDate { get; set; }
     public DateTimeOffset? UpdatedDate { get; set; }
     public DateTimeOffset? DeletedDate { get; set; }
     public Entity()
     {
-        Id = default;
     }
     public Entity(TId id)
     {

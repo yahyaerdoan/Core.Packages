@@ -2,13 +2,14 @@
 using Core.CrossCuttingConcernLayer.ExceptionHandlings.HttpProblemDetails;
 using Core.CrossCuttingConcernLayer.ExceptionHandlings.Types.Businesses;
 using Core.CrossCuttingConcernLayer.ExceptionHandlings.Types.Validations;
+
 using Microsoft.AspNetCore.Http;
 
 namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Handlers;
 
 public class HttpExceptionHandler : ExceptionHandler
 {
-    private HttpResponse? _response { get; set; }
+    private HttpResponse? _response;
     public HttpResponse Response
     {
         get => _response ?? throw new ArgumentNullException(nameof(_response));

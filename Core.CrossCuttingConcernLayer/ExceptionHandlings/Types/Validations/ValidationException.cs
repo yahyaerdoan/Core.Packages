@@ -6,17 +6,17 @@ public class ValidationException : Exception
 
     public ValidationException() : base()
     {
-        Errors = Array.Empty<ValidationExceptionModel>();
+        Errors = [];
     }
 
     public ValidationException(string? message) : base(message)
     {
-        Errors = Array.Empty<ValidationExceptionModel>();
+        Errors = [];
     }
 
     public ValidationException(string? message, Exception? innerException) : base(message, innerException)
     {
-        Errors = Array.Empty<ValidationExceptionModel>();
+        Errors = [];
     }
 
     public ValidationException(IEnumerable<ValidationExceptionModel> errors) : base(BuildErrorMessage(errors))
@@ -27,7 +27,7 @@ public class ValidationException : Exception
     private static string BuildErrorMessage(IEnumerable<ValidationExceptionModel> errors)
     {
         IEnumerable<string> arr = errors.Select(
-            x => $"{Environment.NewLine} -- {x.Property}: {string.Join(Environment.NewLine, values: x.Errors ?? Array.Empty<string>())}"
+            x => $"{Environment.NewLine} -- {x.Property}: {string.Join(Environment.NewLine, values: x.Errors ?? [])}"
         );
         return $"Validation failed: {string.Join(string.Empty, arr)}";
     }
