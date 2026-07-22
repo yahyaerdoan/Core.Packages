@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Security.Claims;
 
 namespace Core.SecurityLayer.Extensions
 {
@@ -15,10 +10,10 @@ namespace Core.SecurityLayer.Extensions
             return result;
         }
 
-        public static List<string>? ClaimRoles(this ClaimsPrincipal claimsPrincipal) => 
+        public static List<string>? ClaimRoles(this ClaimsPrincipal claimsPrincipal) =>
             claimsPrincipal?.Claims(ClaimTypes.Role);
 
-        public static int GetUserId(this ClaimsPrincipal claimsPrincipal) => 
+        public static int GetUserId(this ClaimsPrincipal claimsPrincipal) =>
             Convert.ToInt32(claimsPrincipal?.Claims(ClaimTypes.NameIdentifier)?.FirstOrDefault());
     }
 }

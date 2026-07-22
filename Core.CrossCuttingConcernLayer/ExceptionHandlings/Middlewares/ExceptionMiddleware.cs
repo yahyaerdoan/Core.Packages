@@ -2,12 +2,7 @@
 using Core.CrossCuttingConcernLayer.Loggings.Parameters;
 using Core.CrossCuttingConcernLayer.Loggings.Serilogs.Services;
 using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Middlewares;
 
@@ -41,17 +36,17 @@ public class ExceptionMiddleware
 
     private Task LogException(HttpContext httpContext, Exception exception)
     {
-        List<LogParameter> logParameters = new() 
-        { 
-            new LogParameter { Type = httpContext.GetType().Name, Value = exception.ToString() } 
+        List<LogParameter> logParameters = new()
+        {
+            new LogParameter { Type = httpContext.GetType().Name, Value = exception.ToString() }
         };
 
-        LogDetailWithException logDetail = new() 
-        { 
+        LogDetailWithException logDetail = new()
+        {
             ExceptionMessage = exception.Message,
-            MethodName = _next.Method.Name, 
-            Parameters = logParameters, 
-            User = _httpContextAccessor.HttpContext?.User.Identity?.Name ?? "?" 
+            MethodName = _next.Method.Name,
+            Parameters = logParameters,
+            User = _httpContextAccessor.HttpContext?.User.Identity?.Name ?? "?"
         };
 
         _baseLoggerService.Error(JsonSerializer.Serialize(logDetail));

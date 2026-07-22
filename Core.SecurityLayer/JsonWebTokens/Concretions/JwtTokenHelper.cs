@@ -4,14 +4,9 @@ using Core.SecurityLayer.Extensions;
 using Core.SecurityLayer.JsonWebTokens.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core.SecurityLayer.JsonWebTokens.Concretions;
 
@@ -56,11 +51,11 @@ public class JwtTokenHelper : IJwtTokenHelper
     public JwtSecurityToken CreateJwtSecurityToken(TokenOption tokenOptions, User user, SigningCredentials signingCredentials, IList<OperationClaim> operationClaims)
     {
         JwtSecurityToken jwtSecurityToken = new(
-            tokenOptions.Issuer, 
-            tokenOptions.Audience, 
-            expires: _accessTokenExpiration, 
-            notBefore: DateTime.Now, 
-            claims: SetClaims(user, operationClaims), 
+            tokenOptions.Issuer,
+            tokenOptions.Audience,
+            expires: _accessTokenExpiration,
+            notBefore: DateTime.Now,
+            claims: SetClaims(user, operationClaims),
             signingCredentials: signingCredentials);
         return jwtSecurityToken;
     }

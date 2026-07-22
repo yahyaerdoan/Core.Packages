@@ -1,16 +1,10 @@
 ﻿using Core.PersistenceLayer.Pagings.Paging;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core.PersistenceLayer.Pagings.Extensions;
 
 public static class IQueryablePaginateExtensions
 {
-    public static  Paginate<T> ToPaginate<T>(
+    public static Paginate<T> ToPaginate<T>(
         this IQueryable<T> source,
         int index,
         int size,

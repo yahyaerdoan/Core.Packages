@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Core.PersistenceLayer.Repositories.Entities;
+﻿namespace Core.PersistenceLayer.Repositories.Entities;
 
 public class Entity<TId> : IEntityTimeStamps
 {

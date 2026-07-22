@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Types.Businesses;
+﻿namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Types.Businesses;
 
 public class BusinessException : Exception
 {

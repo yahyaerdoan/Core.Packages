@@ -1,13 +1,8 @@
 ﻿using Core.PersistenceLayer.Repositories.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core.SecurityLayer.Entities;
 
-public class RefreshToken :  Entity<int>
+public class RefreshToken : Entity<int>
 {
     public int UserId { get; set; }
     public string Token { get; set; }
@@ -31,7 +26,7 @@ public class RefreshToken :  Entity<int>
         Expires = expires;
         CreatedByIp = createdByIp;
     }
-    public RefreshToken(int id, int userId, string token, DateTime expires, string createdByIp) :base(id)
+    public RefreshToken(int id, int userId, string token, DateTime expires, string createdByIp) : base(id)
     {
         UserId = userId;
         Token = token;

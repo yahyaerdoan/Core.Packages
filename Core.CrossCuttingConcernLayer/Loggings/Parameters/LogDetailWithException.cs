@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Core.CrossCuttingConcernLayer.Loggings.Parameters;
+﻿namespace Core.CrossCuttingConcernLayer.Loggings.Parameters;
 
 public class LogDetailWithException : LogDetail
 {
@@ -15,7 +9,7 @@ public class LogDetailWithException : LogDetail
         ExceptionMessage = string.Empty;
     }
 
-    public LogDetailWithException(string fullName, string methodName, string user, 
+    public LogDetailWithException(string fullName, string methodName, string user,
         List<LogParameter> parameters, string exceptionMessage) : base(fullName, methodName, user, parameters)
     {
         ExceptionMessage = exceptionMessage;

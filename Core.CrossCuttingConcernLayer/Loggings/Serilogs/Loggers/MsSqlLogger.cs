@@ -5,11 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Core;
 using Serilog.Sinks.MSSqlServer;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core.CrossCuttingConcernLayer.Loggings.Serilogs.Loggers;
 
@@ -19,7 +14,7 @@ public class MsSqlLogger : BaseLoggerService
     public MsSqlLogger(IConfiguration configuration)
     {
         //_configuration = configuration;
-        MsSqlConfiguration msSqlConfiguration  = configuration.GetSection("SeriLogConfigurations:MsSqlLogConfiguration").Get<MsSqlConfiguration>() ?? throw new Exception(SerilogMessage.NullOptionsMessage);
+        MsSqlConfiguration msSqlConfiguration = configuration.GetSection("SeriLogConfigurations:MsSqlLogConfiguration").Get<MsSqlConfiguration>() ?? throw new Exception(SerilogMessage.NullOptionsMessage);
 
         MSSqlServerSinkOptions mSSqlServerSinkOptions = new()
         {

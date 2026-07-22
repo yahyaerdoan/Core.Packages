@@ -1,10 +1,5 @@
 ﻿using Core.PersistenceLayer.Pagings.Paging;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core.PersistenceLayer.Pagings.Extensions;
 
@@ -17,7 +12,7 @@ public static class IQueryablePaginateAsyncExtensions
         CancellationToken cancellationToken = default)
     {
         int count = await source.CountAsync(cancellationToken).ConfigureAwait(false);
-        List<T> items = await source.Skip(index *  size).Take(size).ToListAsync().ConfigureAwait(false);
+        List<T> items = await source.Skip(index * size).Take(size).ToListAsync().ConfigureAwait(false);
         Paginate<T> result = new Paginate<T>()
         {
             Index = index,
@@ -28,5 +23,5 @@ public static class IQueryablePaginateAsyncExtensions
 
         };
         return result;
-    }    
+    }
 }

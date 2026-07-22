@@ -1,15 +1,9 @@
 ﻿using Core.ApplicationLayer.Pipelines.Authorizations.Abstractions;
+using Core.CrossCuttingConcernLayer.ExceptionHandlings.Types.Authorizations;
+using Core.SecurityLayer.Constants;
+using Core.SecurityLayer.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
-using Core.SecurityLayer.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Core.SecurityLayer.Constants;
-using Core.CrossCuttingConcernLayer.ExceptionHandlings.Types.Authorizations;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Core.ApplicationLayer.Pipelines.Authorizations.Concretions;
 
@@ -29,9 +23,9 @@ public class AuthorizationAddingBehavior<TRequest, TResponse> : IPipelineBehavio
         if (userRoleClaims == null)
             throw new AuthorizationException("You are not authenticated.");
 
-        bool isNotMatchedAUserRoleClaimWithRequestRoles = userRoleClaims
-            .FirstOrDefault(userRoleClaim => userRoleClaim == GeneralOperationClaims.Admin || request.Roles.Any(role => role == userRoleClaim))
-            .IsNullOrEmpty();
+        bool isNotMatchedAUserRoleClaimWithRequestRoles = string.IsNullOrEmpty(
+            userRoleClaims.FirstOrDefault(userRoleClaim => userRoleClaim == GeneralOperationClaims.Admin || request.Roles.Any(role => role == userRoleClaim))
+        );
         if (isNotMatchedAUserRoleClaimWithRequestRoles)
             throw new AuthorizationException("You are not authorized.");
 

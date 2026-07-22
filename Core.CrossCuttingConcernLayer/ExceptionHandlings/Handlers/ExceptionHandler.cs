@@ -1,10 +1,5 @@
 ﻿using Core.CrossCuttingConcernLayer.ExceptionHandlings.Types.Businesses;
 using Core.CrossCuttingConcernLayer.ExceptionHandlings.Types.Validations;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Handlers;
 
@@ -14,7 +9,7 @@ public abstract class ExceptionHandler
         exception switch
         {
             BusinessException businessException => HandleException(businessException),
-            ValidationException validationException => HandleException(validationException),    
+            ValidationException validationException => HandleException(validationException),
             _ => HandleExceptionsAsync(exception)
         };
 

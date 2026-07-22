@@ -1,10 +1,5 @@
 ﻿using Core.PersistenceLayer.Repositories.Entities;
 using Core.SecurityLayer.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core.SecurityLayer.Entities;
 
@@ -41,7 +36,7 @@ public class User : Entity<int>
         Status = status;
     }
     public User(int id, string firstName, string lastName, string email, byte[] passwordSalt, byte[] passwordHash, bool status) : base(id)
-    {       
+    {
         FirstName = firstName;
         LastName = lastName;
         Email = email;

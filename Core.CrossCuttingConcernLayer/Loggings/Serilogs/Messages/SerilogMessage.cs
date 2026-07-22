@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Core.CrossCuttingConcernLayer.Loggings.Serilogs.Messages;
+﻿namespace Core.CrossCuttingConcernLayer.Loggings.Serilogs.Messages;
 
 public static class SerilogMessage
 {
