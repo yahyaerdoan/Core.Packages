@@ -32,7 +32,7 @@ public interface IAsyncRepository<TEntity, TEntityId> : IQuery<TEntity> where TE
         Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null,
         int index = 0,
         int size = 10,
-         bool withDeleted = false,
+        bool withDeleted = false,
         bool enableTracking = false,
         CancellationToken cancellationToken = default);
     Task<bool> AnyAsync(
