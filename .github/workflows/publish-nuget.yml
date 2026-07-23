@@ -23,6 +23,16 @@ jobs:
             -p:Version=1.0.${{ github.run_number }} \
             -p:PackageOutputPath=${{ github.workspace }}/nupkgs
 
+      - name: Check secret is populated (debug only, prints no secret value)
+        env:
+          TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+        run: |
+          echo "Token length: ${#TOKEN}"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::GH_PACKAGES_TOKEN is empty or not set for this repo."
+            exit 1
+          fi
+
       - name: Push packages to GitHub Packages
         run: |
           dotnet nuget push "nupkgs/*.nupkg" \
