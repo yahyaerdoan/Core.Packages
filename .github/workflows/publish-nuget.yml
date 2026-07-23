@@ -18,11 +18,14 @@ jobs:
         run: dotnet restore Core.Packages.sln
 
       - name: Build and pack (version 1.0.${{ github.run_number }})
-        run: dotnet build Core.Packages.sln --configuration Release -p:Version=1.0.${{ github.run_number }}
+        run: |
+          dotnet build Core.Packages.sln --configuration Release \
+            -p:Version=1.0.${{ github.run_number }} \
+            -p:PackageOutputPath=${{ github.workspace }}/nupkgs
 
       - name: Push packages to GitHub Packages
         run: |
-          dotnet nuget push "**/LocalFeed/*.nupkg" \
-            --api-key ${{ secrets.GH_PACKAGES_TOKEN }} \
+          dotnet nuget push "nupkgs/*.nupkg" \
+            --api-key "${{ secrets.GH_PACKAGES_TOKEN }}" \
             --source "https://nuget.pkg.github.com/yahyaerdoan/index.json" \
             --skip-duplicate
