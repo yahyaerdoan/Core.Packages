@@ -12,4 +12,15 @@
     <Nullable Condition="'$(Nullable)' == ''">enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- Pack every project here on each build and drop it straight into a local folder
+         feed, so consumers (e.g. MetroMiles) get a real NuGet package instead of a raw
+         HintPath binary reference. Bump Version when a change needs to reach consumers:
+         NuGet treats a given Id+Version as immutable once cached, so clear the local
+         cache (dotnet nuget locals all clear) after a bump to force re-restore. -->
+    <Version>1.0.0</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)..\LocalFeed</PackageOutputPath>
+  </PropertyGroup>
+
 </Project>
