@@ -8,6 +8,9 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
     steps:
       - uses: actions/checkout@v7
 
@@ -29,12 +32,12 @@ jobs:
           dotnet nuget add source "https://nuget.pkg.github.com/yahyaerdoan/index.json" \
             --name github \
             --username yahyaerdoan \
-            --password "${{ secrets.GH_PACKAGES_TOKEN }}" \
+            --password "${{ secrets.GITHUB_TOKEN }}" \
             --store-password-in-clear-text
 
       - name: Push packages to GitHub Packages
         run: |
           dotnet nuget push "nupkgs/*.nupkg" \
-            --api-key "${{ secrets.GH_PACKAGES_TOKEN }}" \
+            --api-key "${{ secrets.GITHUB_TOKEN }}" \
             --source "github" \
             --skip-duplicate
