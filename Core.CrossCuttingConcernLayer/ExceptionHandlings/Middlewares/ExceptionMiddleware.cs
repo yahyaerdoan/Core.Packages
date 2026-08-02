@@ -1,16 +1,20 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 
-using Core.CrossCuttingConcernLayer.ExceptionHandlings.Handlers;
 using Core.CrossCuttingConcernLayer.Loggings.Parameters;
 using Core.CrossCuttingConcernLayer.Loggings.Serilogs.Services;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
+
+using ResultHandler.AspNetCore.Extensions;
+using ResultHandler.Core.Abstractions;
+using ResultHandler.Facade;
 
 namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Middlewares;
 
-public class ExceptionMiddleware(RequestDelegate next, IHttpContextAccessor httpContextAccessor, BaseLoggerService baseLoggerService)
+public class ExceptionMiddleware(RequestDelegate next, IHttpContextAccessor httpContextAccessor, BaseLoggerService baseLoggerService, IHostEnvironment hostEnvironment)
 {
-    private readonly HttpExceptionHandler _httpExceptionHandler = new();
+    private const string GenericInternalServerErrorMessage = "An unexpected error occurred. Please try again later.";
 
     public async Task Invoke(HttpContext httpContext)
     {
@@ -18,16 +22,20 @@ public class ExceptionMiddleware(RequestDelegate next, IHttpContextAccessor http
         {
             await next(httpContext);
         }
+        catch (OperationCanceledException) when (httpContext.RequestAborted.IsCancellationRequested)
+        {
+            // Client disconnected or cancelled the request; nothing to log or respond to.
+        }
         catch (Exception exception)
         {
             await LogException(httpContext, exception);
-            await HandleExceptionAsync(httpContext.Response, exception);
+            await HandleExceptionAsync(httpContext, exception);
         }
     }
 
     private Task LogException(HttpContext httpContext, Exception exception)
     {
-        List<LogParameter> logParameters = [new LogParameter { Type = httpContext.GetType().Name, Value = exception.ToString() }];
+        List<LogParameter> logParameters = [new LogParameter { Type = exception.GetType().Name, Value = exception.ToString() }];
 
         ExceptionLogDetail logDetail = new()
         {
@@ -42,10 +50,22 @@ public class ExceptionMiddleware(RequestDelegate next, IHttpContextAccessor http
         return Task.CompletedTask;
     }
 
-    private Task HandleExceptionAsync(HttpResponse response, Exception exception)
+    private Task HandleExceptionAsync(HttpContext httpContext, Exception exception)
     {
-        response.ContentType = "application/json";
-        _httpExceptionHandler.Response = response;
-        return _httpExceptionHandler.HandleExceptionsAsync(exception);
+        httpContext.Response.ContentType = "application/json";
+
+        IOperationResult result = exception switch
+        {
+            BadHttpRequestException badHttpRequestException => Result.BadRequest(badHttpRequestException.Message),
+            JsonException jsonException => Result.BadRequest(jsonException.Message),
+            // Never echo raw exception text for truly unexpected failures in production — it can
+            // leak connection strings, hostnames, internal paths, etc. Full detail is already
+            // captured server-side via LogException above.
+            _ => Result.InternalServerError(hostEnvironment.IsDevelopment() ? exception.Message : GenericInternalServerErrorMessage)
+        };
+
+        var problem = result.ToProblemDetails(httpContext);
+        httpContext.Response.StatusCode = problem.Status ?? StatusCodes.Status500InternalServerError;
+        return httpContext.Response.WriteAsJsonAsync(problem);
     }
 }
