@@ -18,7 +18,7 @@
          HintPath binary reference. Bump Version when a change needs to reach consumers:
          NuGet treats a given Id+Version as immutable once cached, so clear the local
          cache (dotnet nuget locals all clear) after a bump to force re-restore. -->
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageOutputPath>$(MSBuildThisFileDirectory)..\LocalFeed</PackageOutputPath>
   </PropertyGroup>
