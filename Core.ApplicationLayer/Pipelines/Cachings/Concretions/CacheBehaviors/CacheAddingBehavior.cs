@@ -26,24 +26,22 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache 
             return await next(cancellationToken);
         }
 
-        TResponse? response;
-
         byte[]? cachedResponse = await distributedCache.GetAsync(request.CacheKey, cancellationToken);
 
         if (cachedResponse != null)
         {
-            response = JsonSerializer.Deserialize<TResponse>(Encoding.Default.GetString(cachedResponse));
-            LogFetchedFromCache(request.CacheKey);
-        }
-        else
-        {
-            response = await GetResponseAndAddToCache(request, next, cancellationToken);
+            TResponse? deserializedResponse = JsonSerializer.Deserialize<TResponse>(Encoding.Default.GetString(cachedResponse));
+            if (deserializedResponse != null)
+            {
+                LogFetchedFromCache(request.CacheKey);
+                return deserializedResponse;
+            }
         }
 
-        return response!;
+        return await GetResponseAndAddToCache(request, next, cancellationToken);
     }
 
-    private async Task<TResponse?> GetResponseAndAddToCache(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    private async Task<TResponse> GetResponseAndAddToCache(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         TResponse response = await next(cancellationToken);
 
