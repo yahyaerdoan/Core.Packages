@@ -4,6 +4,7 @@ using Core.CrossCuttingConcernLayer.Loggings.Parameters;
 using Core.CrossCuttingConcernLayer.Loggings.Serilogs.Services;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 
 using ResultHandler.AspNetCore.Extensions;
@@ -58,6 +59,8 @@ public class ExceptionMiddleware(RequestDelegate next, IHttpContextAccessor http
         {
             BadHttpRequestException badHttpRequestException => Result.BadRequest(badHttpRequestException.Message),
             JsonException jsonException => Result.BadRequest(jsonException.Message),
+            DbUpdateConcurrencyException => Result.Conflict("This record was modified by someone else. Please reload and try again."),
+            DbUpdateException => Result.Conflict("This operation conflicts with existing data. Please check your input and try again."),
             // Never echo raw exception text for truly unexpected failures in production — it can
             // leak connection strings, hostnames, internal paths, etc. Full detail is already
             // captured server-side via LogException above.
