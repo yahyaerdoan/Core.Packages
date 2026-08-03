@@ -2,7 +2,7 @@ name: Publish NuGet packages
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, beta ]
   workflow_dispatch: {}
 
 jobs:
@@ -15,13 +15,22 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Resolve package version
+        id: version
+        run: |
+          version="1.0.${{ github.run_number }}"
+          if [ "${{ github.ref_name }}" = "beta" ]; then
+            version="${version}-beta.${{ github.run_number }}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Restore
         run: dotnet restore Core.Packages.sln
 
-      - name: Build and pack (version 1.0.${{ github.run_number }})
+      - name: Build and pack (version ${{ steps.version.outputs.version }})
         run: |
           dotnet build Core.Packages.sln --configuration Release \
-            -p:Version=1.0.${{ github.run_number }} \
+            -p:Version=${{ steps.version.outputs.version }} \
             -p:PackageOutputPath=${{ github.workspace }}/nupkgs
 
       - name: Add GitHub Packages source
