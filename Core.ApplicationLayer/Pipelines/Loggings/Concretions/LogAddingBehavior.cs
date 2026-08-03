@@ -25,17 +25,18 @@ public class LogAddingBehavior<TRequest, TResponse>(IHttpContextAccessor httpCon
         return await next(cancellationToken);
     }
 
+    private static readonly PropertyInfo[] Properties = typeof(TRequest).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+    private static readonly PropertyInfo[] SensitiveProperties =
+        Properties.Where(p => p.GetCustomAttribute<SensitiveDataAttribute>() is not null).ToArray();
+
     private static object Redact(TRequest request)
     {
-        var properties = typeof(TRequest).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-        var hasSensitiveData = properties.Any(p => p.GetCustomAttribute<SensitiveDataAttribute>() is not null);
-        if (!hasSensitiveData)
+        if (SensitiveProperties.Length == 0)
         {
             return request;
         }
 
-        return properties.ToDictionary(
-            p => p.Name,
-            p => p.GetCustomAttribute<SensitiveDataAttribute>() is not null ? RedactedValue : p.GetValue(request));
+        return Properties.ToDictionary(p => p.Name, p => SensitiveProperties.Contains(p) ? RedactedValue : p.GetValue(request));
     }
 }
