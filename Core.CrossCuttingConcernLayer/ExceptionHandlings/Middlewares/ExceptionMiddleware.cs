@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using Core.CrossCuttingConcernLayer.ExceptionHandlings.Exceptions;
 using Core.CrossCuttingConcernLayer.Loggings.Parameters;
 using Core.CrossCuttingConcernLayer.Loggings.Serilogs.Services;
 
@@ -59,6 +60,7 @@ public class ExceptionMiddleware(RequestDelegate next, IHttpContextAccessor http
         {
             BadHttpRequestException badHttpRequestException => Result.BadRequest(badHttpRequestException.Message),
             JsonException jsonException => Result.BadRequest(jsonException.Message),
+            BusinessRuleException businessRuleException => Result.Conflict(businessRuleException.Message),
             DbUpdateConcurrencyException => Result.Conflict("This record was modified by someone else. Please reload and try again."),
             DbUpdateException => Result.Conflict("This operation conflicts with existing data. Please check your input and try again."),
             // Never echo raw exception text for truly unexpected failures in production — it can
