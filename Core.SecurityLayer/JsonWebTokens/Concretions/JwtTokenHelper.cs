@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using Core.SecurityLayer.Encryptions;
 using Core.SecurityLayer.Entities;
 using Core.SecurityLayer.Extensions;
+using Core.SecurityLayer.Hashings;
 using Core.SecurityLayer.JsonWebTokens.Abstractions;
 
 using Microsoft.Extensions.Configuration;
@@ -27,16 +28,17 @@ public class JwtTokenHelper : IJwtTokenHelper
             ?? throw new InvalidOperationException($"\"{configurationSection}\" section cannot found in configuration.");
     }
 
-    public RefreshToken CreateRefreshToken(User user, string ipAddress)
+    public (RefreshToken RefreshToken, string RawToken) CreateRefreshToken(User user, string ipAddress)
     {
+        var rawToken = RandomRefreshToken();
         RefreshToken refreshToken = new()
         {
             UserId = user.Id,
-            Token = RandomRefreshToken(),
-            Expires = DateTime.UtcNow.AddDays(7),
+            Token = TokenHashingHelper.Hash(rawToken),
+            Expires = DateTime.UtcNow.AddMinutes(_tokenOptions.RefreshTokenTTL),
             CreatedByIp = ipAddress,
         };
-        return refreshToken;
+        return (refreshToken, rawToken);
     }
 
     public AccessToken CreateToken(User user, IList<OperationClaim> operationClaims)
