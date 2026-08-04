@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Linq.Expressions;
-using System.Reflection;
 
+using Core.CrossCuttingConcernLayer.ExceptionHandlings.Exceptions;
 using Core.PersistenceLayer.Dynamics.Dynamic;
 using Core.PersistenceLayer.Dynamics.Extensions;
 using Core.PersistenceLayer.Pagings.Extensions;
@@ -24,7 +24,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
 
     public async Task<TEntity> AddAsync(TEntity entity)
     {
-        entity.CreatedDate = DateTimeOffset.Now;
+        entity.CreatedDate = DateTimeOffset.UtcNow;
         await Context.AddAsync(entity);
         await Context.SaveChangesAsync();
         return entity;
@@ -34,7 +34,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
     {
         foreach (TEntity entity in entities)
         {
-            entity.CreatedDate = DateTime.UtcNow;
+            entity.CreatedDate = DateTimeOffset.UtcNow;
             await Context.AddRangeAsync(entity);
             await Context.SaveChangesAsync();
         }
@@ -111,7 +111,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
 
     public async Task<TEntity> UpdateAsync(TEntity entity)
     {
-        entity.UpdatedDate = DateTimeOffset.Now;
+        entity.UpdatedDate = DateTimeOffset.UtcNow;
         Context.Update(entity);
         await Context.SaveChangesAsync();
         return entity;
@@ -121,7 +121,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
     {
         foreach (TEntity entity in entities)
         {
-            entity.UpdatedDate = DateTimeOffset.Now;
+            entity.UpdatedDate = DateTimeOffset.UtcNow;
             Context.UpdateRange(entity);
             await Context.SaveChangesAsync();
         }
@@ -143,18 +143,9 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
     }
     protected void CheckHasEntityHaveOneToOneRelation(TEntity entity)
     {
-        bool hasEntityHaveOneToOneRelation =
-                   Context
-                       .Entry(entity)
-                       .Metadata.GetForeignKeys()
-                       .All(
-                           x =>
-                               x.DependentToPrincipal?.IsCollection == true
-                               || x.PrincipalToDependent?.IsCollection == true
-                               || x.DependentToPrincipal?.ForeignKey.DeclaringEntityType.ClrType == entity.GetType()
-                       ) == false;
+        bool hasEntityHaveOneToOneRelation = Context.Entry(entity).Metadata.GetForeignKeys().Any(fk => fk.IsUnique);
         if (hasEntityHaveOneToOneRelation)
-            throw new InvalidOperationException(
+            throw new BusinessRuleException(
                 "Entity has one-to-one relationship. Soft Delete causes problems if you try to create entry again by same foreign key."
             );
     }
@@ -162,7 +153,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
     {
         if (entity.DeletedDate.HasValue)
             return;
-        entity.DeletedDate = DateTime.UtcNow;
+        entity.DeletedDate = DateTimeOffset.UtcNow;
 
         var navigations = Context
             .Entry(entity)
@@ -182,7 +173,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
                 if (navValue == null)
                 {
                     IQueryable query = Context.Entry(entity).Collection(navigation.PropertyInfo.Name).Query();
-                    navValue = await GetRelationLoaderQuery(query, navigationPropertyType: navigation.PropertyInfo.GetType()).ToListAsync();
+                    navValue = await GetRelationLoaderQuery(query).ToListAsync();
                     if (navValue == null)
                         continue;
                 }
@@ -195,8 +186,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
                 if (navValue == null)
                 {
                     IQueryable query = Context.Entry(entity).Reference(navigation.PropertyInfo.Name).Query();
-                    navValue = await GetRelationLoaderQuery(query, navigationPropertyType: navigation.PropertyInfo.GetType())
-                        .FirstOrDefaultAsync();
+                    navValue = await GetRelationLoaderQuery(query).FirstOrDefaultAsync();
                     if (navValue == null)
                         continue;
                 }
@@ -207,19 +197,8 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
 
         Context.Update(entity);
     }
-    protected IQueryable<object> GetRelationLoaderQuery(IQueryable query, Type navigationPropertyType)
-    {
-        Type queryProviderType = query.Provider.GetType();
-        MethodInfo createQueryMethod =
-            queryProviderType
-                .GetMethods()
-                .First(m => m is { Name: nameof(query.Provider.CreateQuery), IsGenericMethod: true })
-                ?.MakeGenericMethod(navigationPropertyType)
-            ?? throw new InvalidOperationException("CreateQuery<TElement> method is not found in IQueryProvider.");
-        var queryProviderQuery =
-            (IQueryable<object>)createQueryMethod.Invoke(query.Provider, parameters: [query.Expression])!;
-        return queryProviderQuery.Where(x => !((IEntityTimeStamps)x).DeletedDate.HasValue);
-    }
+    protected IQueryable<object> GetRelationLoaderQuery(IQueryable query) =>
+        query.Cast<object>().Where(x => !((IEntityTimeStamps)x).DeletedDate.HasValue);
     protected async Task SetEntityAsDeletedAsync(IEnumerable<TEntity> entities, bool permanent)
     {
         foreach (TEntity entity in entities)

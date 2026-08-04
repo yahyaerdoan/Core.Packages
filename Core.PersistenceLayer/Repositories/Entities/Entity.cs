@@ -6,6 +6,7 @@ public class Entity<TId> : IEntityTimeStamps
     public DateTimeOffset CreatedDate { get; set; }
     public DateTimeOffset? UpdatedDate { get; set; }
     public DateTimeOffset? DeletedDate { get; set; }
+    public byte[]? RowVersion { get; set; }
     public Entity()
     {
     }
