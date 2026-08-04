@@ -23,4 +23,17 @@
     <PackageOutputPath>$(MSBuildThisFileDirectory)..\LocalFeed</PackageOutputPath>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- Shared NuGet package metadata; nuget.org shows warnings and mostly refuses
+         to render the listing nicely without these, even though they're not
+         strictly required to push. -->
+    <Authors>Yahya Erdogan</Authors>
+    <Company>Yahya Erdogan</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/yahyaerdoan/Core.Packages</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/yahyaerdoan/Core.Packages</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>ntier;core;layer</PackageTags>
+  </PropertyGroup>
+
 </Project>
