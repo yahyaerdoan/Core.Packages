@@ -19,11 +19,8 @@ public class ValidationAddingBehavior<TRequest, TResponse>(IEnumerable<IValidato
             .Select(v => v.Validate(context))
             .SelectMany(result => result.Errors)
             .Where(failure => failure != null)
-            .Select(failure => $"{failure.PropertyName}: {failure.ErrorMessage}")];
+            .Select(failure => failure.ErrorMessage)];
 
-        if (errors.Length > 0)
-            return TResponse.Failure(errors);
-
-        return await next(cancellationToken);
+        return errors.Length > 0 ? TResponse.Failure(errors) : await next(cancellationToken);
     }
 }
