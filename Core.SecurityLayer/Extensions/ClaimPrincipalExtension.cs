@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 
 namespace Core.SecurityLayer.Extensions;
 
@@ -14,6 +13,8 @@ public static class ClaimPrincipalExtension
     public static List<string>? ClaimRoles(this ClaimsPrincipal claimsPrincipal) =>
         claimsPrincipal?.Claims(ClaimTypes.Role);
 
-    public static int GetUserId(this ClaimsPrincipal claimsPrincipal) =>
-        Convert.ToInt32(claimsPrincipal?.Claims(ClaimTypes.NameIdentifier)?.FirstOrDefault(), CultureInfo.InvariantCulture);
+    // TKey-generic since IdentityUser<TKey> may use Guid, int, or string.
+    public static TKey GetUserId<TKey>(this ClaimsPrincipal claimsPrincipal) where TKey : IParsable<TKey> =>
+        TKey.Parse(claimsPrincipal?.Claims(ClaimTypes.NameIdentifier)?.FirstOrDefault()
+            ?? throw new InvalidOperationException("Principal has no NameIdentifier claim."), null);
 }

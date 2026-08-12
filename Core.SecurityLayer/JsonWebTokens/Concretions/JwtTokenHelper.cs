@@ -1,11 +1,8 @@
-﻿using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 
 using Core.SecurityLayer.Encryptions;
-using Core.SecurityLayer.Entities;
-using Core.SecurityLayer.Extensions;
 using Core.SecurityLayer.Hashings;
 using Core.SecurityLayer.JsonWebTokens.Abstractions;
 
@@ -16,63 +13,40 @@ namespace Core.SecurityLayer.JsonWebTokens.Concretions;
 
 public class JwtTokenHelper : IJwtTokenHelper
 {
-    public IConfiguration Configuration { get; }
     private readonly TokenOption _tokenOptions;
-    private DateTime _accessTokenExpiration;
 
     public JwtTokenHelper(IConfiguration configuration)
     {
-        Configuration = configuration;
         const string configurationSection = "TokenOptions";
-        _tokenOptions = Configuration.GetSection(configurationSection).Get<TokenOption>()
+        _tokenOptions = configuration.GetSection(configurationSection).Get<TokenOption>()
             ?? throw new InvalidOperationException($"\"{configurationSection}\" section cannot found in configuration.");
     }
 
-    public (RefreshToken RefreshToken, string RawToken) CreateRefreshToken(User user, string ipAddress)
+    public AccessToken CreateToken(IEnumerable<Claim> claims)
     {
-        var rawToken = RandomRefreshToken();
-        RefreshToken refreshToken = new()
-        {
-            UserId = user.Id,
-            Token = TokenHashingHelper.Hash(rawToken),
-            Expires = DateTime.UtcNow.AddMinutes(_tokenOptions.RefreshTokenTTL),
-            CreatedByIp = ipAddress,
-        };
-        return (refreshToken, rawToken);
-    }
-
-    public AccessToken CreateToken(User user, IList<OperationClaim> operationClaims)
-    {
-        _accessTokenExpiration = DateTime.Now.AddMinutes(_tokenOptions.AccessTokenExpiration);
+        var accessTokenExpiration = DateTime.UtcNow.AddMinutes(_tokenOptions.AccessTokenExpiration);
         SecurityKey securityKey = SecurityKeyHelper.CreateSecurityKey(_tokenOptions.SecurityKey);
         SigningCredentials signingCredentials = SigningCredentialHelper.CreateSigningCredentials(securityKey);
-        JwtSecurityToken jwtSecurityToken = CreateJwtSecurityToken(_tokenOptions, user, signingCredentials, operationClaims);
-        JwtSecurityTokenHandler jwtSecurityTokenHandler = new();
-        string? token = jwtSecurityTokenHandler.WriteToken(jwtSecurityToken);
 
-        return new AccessToken { Token = token, Expiration = _accessTokenExpiration };
-    }
-
-    public JwtSecurityToken CreateJwtSecurityToken(TokenOption tokenOptions, User user, SigningCredentials signingCredentials, IList<OperationClaim> operationClaims)
-    {
         JwtSecurityToken jwtSecurityToken = new(
-            tokenOptions.Issuer,
-            tokenOptions.Audience,
-            expires: _accessTokenExpiration,
-            notBefore: DateTime.Now,
-            claims: SetClaims(user, operationClaims),
+            _tokenOptions.Issuer,
+            _tokenOptions.Audience,
+            expires: accessTokenExpiration,
+            notBefore: DateTime.UtcNow,
+            claims: claims,
             signingCredentials: signingCredentials);
-        return jwtSecurityToken;
+
+        JwtSecurityTokenHandler jwtSecurityTokenHandler = new();
+        string token = jwtSecurityTokenHandler.WriteToken(jwtSecurityToken);
+
+        return new AccessToken { Token = token, Expiration = accessTokenExpiration };
     }
 
-    private static List<Claim> SetClaims(User user, IList<OperationClaim> operationClaims)
+    public RefreshTokenResult CreateRefreshToken()
     {
-        List<Claim> claims = [];
-        claims.AddNameIdentifier(user.Id.ToString(CultureInfo.InvariantCulture));
-        claims.AddEmail(user.Email);
-        claims.AddName($"{user.FirstName} {user.LastName}");
-        claims.AddRoles([.. operationClaims.Select(c => c.Name)]);
-        return claims;
+        var rawToken = RandomRefreshToken();
+        var expires = DateTime.UtcNow.AddMinutes(_tokenOptions.RefreshTokenTTL);
+        return new RefreshTokenResult(rawToken, TokenHashingHelper.Hash(rawToken), expires);
     }
 
     private static string RandomRefreshToken()
