@@ -22,7 +22,10 @@ public class AuthorizationAddingBehavior<TRequest, TResponse>(IHttpContextAccess
             return ResultFailureFactory.Unauthorized<TResponse>("You are not authenticated.");
 
         List<string> userRoleClaims = httpContextAccessor.HttpContext.User.ClaimRoles() ?? [];
-        bool isMatched = userRoleClaims.Any(userRoleClaim => userRoleClaim == GeneralOperationClaims.Admin || request.Roles.Any(role => role == userRoleClaim));
+        List<string> userPermissionClaims = httpContextAccessor.HttpContext.User.ClaimPermissions() ?? [];
+
+        bool isMatched = userPermissionClaims.Contains(PermissionClaimTypes.FullAccess)
+            || request.Roles.Any(role => userRoleClaims.Contains(role) || userPermissionClaims.Contains(role));
         if (!isMatched)
             return ResultFailureFactory.Forbidden<TResponse>("You are not authorized.");
 
