@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using Core.SecurityLayer.Constants;
+using System.Security.Claims;
 
 namespace Core.SecurityLayer.Extensions;
 
@@ -12,6 +13,9 @@ public static class ClaimPrincipalExtension
 
     public static List<string>? ClaimRoles(this ClaimsPrincipal claimsPrincipal) =>
         claimsPrincipal?.Claims(ClaimTypes.Role);
+
+    public static List<string>? ClaimPermissions(this ClaimsPrincipal claimsPrincipal) =>
+        claimsPrincipal?.Claims(PermissionClaimTypes.Type);
 
     // TKey-generic since IdentityUser<TKey> may use Guid, int, or string.
     public static TKey GetUserId<TKey>(this ClaimsPrincipal claimsPrincipal) where TKey : IParsable<TKey> =>
