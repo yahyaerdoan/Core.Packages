@@ -21,6 +21,9 @@ public class AuthorizationAddingBehavior<TRequest, TResponse>(IHttpContextAccess
         if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated is not true)
             return ResultFailureFactory.Unauthorized<TResponse>("You are not authenticated.");
 
+        if (request.Roles.Length == 0)
+            return await next(cancellationToken);
+
         List<string> userRoleClaims = httpContextAccessor.HttpContext.User.ClaimRoles() ?? [];
         List<string> userPermissionClaims = httpContextAccessor.HttpContext.User.ClaimPermissions() ?? [];
 
