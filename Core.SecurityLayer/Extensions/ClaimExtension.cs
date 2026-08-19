@@ -1,4 +1,5 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using Core.SecurityLayer.Constants;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace Core.SecurityLayer.Extensions;
@@ -16,4 +17,7 @@ public static class ClaimExtension
 
     public static void AddRoles(this ICollection<Claim> claims, string[] roles) =>
         roles.ToList().ForEach(role => claims.Add(new Claim(ClaimTypes.Role, role)));
+
+    public static void AddPermissions(this ICollection<Claim> claims, string[] permissions) =>
+        permissions.ToList().ForEach(permission => claims.Add(new Claim(PermissionClaimTypes.Type, permission)));
 }
