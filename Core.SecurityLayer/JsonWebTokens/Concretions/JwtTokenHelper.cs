@@ -1,6 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 
 using Core.SecurityLayer.Encryptions;
 using Core.SecurityLayer.Hashings;
@@ -44,16 +43,8 @@ public class JwtTokenHelper : IJwtTokenHelper
 
     public RefreshTokenResult CreateRefreshToken()
     {
-        var rawToken = RandomRefreshToken();
+        var rawToken = SecureTokenGenerator.GenerateUrlSafeToken();
         var expires = DateTime.UtcNow.AddMinutes(_tokenOptions.RefreshTokenTTL);
         return new RefreshTokenResult(rawToken, TokenHashingHelper.Hash(rawToken), expires);
-    }
-
-    private static string RandomRefreshToken()
-    {
-        byte[] numberByte = new byte[32];
-        using var random = RandomNumberGenerator.Create();
-        random.GetBytes(numberByte);
-        return Convert.ToBase64String(numberByte);
     }
 }
