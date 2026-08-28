@@ -31,7 +31,7 @@ public class CacheRemovingBehavior<TRequest, TResponse>(IDistributedCache distri
                 }
 
                 await distributedCache.RemoveAsync(request.CacheGroupKey, cancellationToken);
-                await distributedCache.RemoveAsync(key: $"{request.CacheGroupKey} SlidingExpiration", cancellationToken);
+                await distributedCache.RemoveAsync(key: $"{request.CacheGroupKey}SlidingExpiration", cancellationToken);
             }
         }
 
