@@ -33,11 +33,10 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
     public async Task<ICollection<TEntity>> AddRangeAsync(ICollection<TEntity> entities)
     {
         foreach (TEntity entity in entities)
-        {
             entity.CreatedDate = DateTimeOffset.UtcNow;
-            await Context.AddRangeAsync(entity);
-            await Context.SaveChangesAsync();
-        }
+
+        await Context.AddRangeAsync(entities);
+        await Context.SaveChangesAsync();
         return entities;
     }
 
@@ -120,11 +119,10 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
     public async Task<ICollection<TEntity>> UpdateRangeAsync(ICollection<TEntity> entities)
     {
         foreach (TEntity entity in entities)
-        {
             entity.UpdatedDate = DateTimeOffset.UtcNow;
-            Context.UpdateRange(entity);
-            await Context.SaveChangesAsync();
-        }
+
+        Context.UpdateRange(entities);
+        await Context.SaveChangesAsync();
         return entities;
     }
 
