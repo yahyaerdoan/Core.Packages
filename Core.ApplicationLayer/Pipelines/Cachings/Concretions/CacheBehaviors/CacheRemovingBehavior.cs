@@ -1,10 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
-
 using Core.ApplicationLayer.Pipelines.Cachings.Abstractions;
-
 using MediatR;
-
 using Microsoft.Extensions.Caching.Distributed;
 
 namespace Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheBehaviors;

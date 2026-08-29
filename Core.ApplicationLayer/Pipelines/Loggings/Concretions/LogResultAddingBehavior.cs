@@ -1,22 +1,17 @@
 using System.Reflection;
 using System.Text.Json;
-
 using Core.ApplicationLayer.Pipelines.Loggings.Abstractions;
 using Core.CrossCuttingConcernLayer.Loggings.Parameters;
 using Core.CrossCuttingConcernLayer.Loggings.Serilogs.Services;
-
 using MediatR;
-
 using Microsoft.AspNetCore.Http;
-
 using ResultHandler.Core.Abstractions;
 
 namespace Core.ApplicationLayer.Pipelines.Loggings.Concretions;
 
-/// <summary>Logs the outcome of a request after it runs - IOperationResult failures (Result.BadRequest
-/// etc.) never throw, so without this they only ever reach the caller as an HTTP response and leave no
-/// trace in the log. Failures log at Warn, successes at Info. Complements ILogAddRequest/LogAddingBehavior,
-/// which logs the request before it runs and knows nothing about the eventual result.</summary>
+/// <summary>Logs the outcome of a request after it runs, since non-throwing IOperationResult failures
+/// (e.g. Result.BadRequest) would otherwise leave no trace in the log. Failures log at Warn, successes
+/// at Info. Complements LogAddingBehavior, which logs the request itself before it runs.</summary>
 public class LogResultAddingBehavior<TRequest, TResponse>(IHttpContextAccessor httpContextAccessor, BaseLoggerService baseLoggerService)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>, ILogResultRequest
@@ -46,9 +41,13 @@ public class LogResultAddingBehavior<TRequest, TResponse>(IHttpContextAccessor h
 
         string json = JsonSerializer.Serialize(logDetail);
         if (response.IsSuccessful)
+        {
             baseLoggerService.Info(json);
+        }
         else
+        {
             baseLoggerService.Warn(json);
+        }
 
         return response;
     }
@@ -60,11 +59,8 @@ public class LogResultAddingBehavior<TRequest, TResponse>(IHttpContextAccessor h
 
     private static object Redact(TRequest request)
     {
-        if (SensitiveProperties.Length == 0)
-        {
-            return request;
-        }
-
-        return Properties.ToDictionary(p => p.Name, p => SensitiveProperties.Contains(p) ? RedactedValue : p.GetValue(request));
+        return SensitiveProperties.Length == 0
+            ? request
+            : Properties.ToDictionary(p => p.Name, p => SensitiveProperties.Contains(p) ? RedactedValue : p.GetValue(request));
     }
 }

@@ -1,5 +1,4 @@
 using System.Security.Claims;
-
 using Core.SecurityLayer.JsonWebTokens.Concretions;
 
 namespace Core.SecurityLayer.JsonWebTokens.Abstractions;

@@ -11,5 +11,8 @@ public abstract class BaseIdentityDbContext<TUser, TRole, TKey>(DbContextOptions
     where TRole : IdentityRole<TKey>
     where TKey : IEquatable<TKey>
 {
-    protected override void OnModelCreating(ModelBuilder builder) => base.OnModelCreating(builder);
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+    }
 }

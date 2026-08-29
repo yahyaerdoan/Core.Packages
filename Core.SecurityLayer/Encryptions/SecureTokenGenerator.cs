@@ -5,6 +5,8 @@ namespace Core.SecurityLayer.Encryptions;
 
 public static class SecureTokenGenerator
 {
-    public static string GenerateUrlSafeToken(int byteLength = 32) =>
-        Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(byteLength));
+    public static string GenerateUrlSafeToken(int byteLength = 32)
+    {
+        return Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(byteLength));
+    }
 }

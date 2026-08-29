@@ -2,5 +2,5 @@
 
 public interface ISecureAddRequest
 {
-    public string[] Roles { get; }
+    string[] Roles { get; }
 }

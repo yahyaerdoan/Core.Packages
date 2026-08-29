@@ -2,7 +2,7 @@
 
 public interface IEntityTimeStamps
 {
-    public DateTimeOffset CreatedDate { get; set; }
-    public DateTimeOffset? UpdatedDate { get; set; }
-    public DateTimeOffset? DeletedDate { get; set; }
+    DateTimeOffset CreatedDate { get; set; }
+    DateTimeOffset? UpdatedDate { get; set; }
+    DateTimeOffset? DeletedDate { get; set; }
 }

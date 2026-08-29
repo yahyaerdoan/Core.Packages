@@ -7,8 +7,8 @@ public class LogDetail
     public string User { get; set; }
     public List<LogParameter> Parameters { get; set; }
 
-    /// <summary>Populated only by outcome-logging behaviors (e.g. LogResultAddingBehavior) - null for
-    /// request-only logging (LogAddingBehavior), which runs before a result exists.</summary>
+    /// <summary>Set only by outcome-logging behaviors (e.g. LogResultAddingBehavior); null for
+    /// request-only logging, which runs before a result exists.</summary>
     public object? Result { get; set; }
 
     public LogDetail()

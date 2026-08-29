@@ -1,6 +1,5 @@
 using Core.SecurityLayer.JsonWebTokens.Abstractions;
 using Core.SecurityLayer.JsonWebTokens.Concretions;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +10,7 @@ public static class SecurityServiceRegistration
 {
     public static IServiceCollection AddSecurityServices(this IServiceCollection services)
     {
-        services.AddScoped<IJwtTokenHelper, JwtTokenHelper>();
+        _ = services.AddScoped<IJwtTokenHelper, JwtTokenHelper>();
         return services;
     }
 
@@ -22,7 +21,7 @@ public static class SecurityServiceRegistration
         where TKey : IEquatable<TKey>
         where TContext : DbContext
     {
-        services.AddIdentityCore<TUser>()
+        _ = services.AddIdentityCore<TUser>()
             .AddRoles<TRole>()
             .AddEntityFrameworkStores<TContext>()
             .AddDefaultTokenProviders();
