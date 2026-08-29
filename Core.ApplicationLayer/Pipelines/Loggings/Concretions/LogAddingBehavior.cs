@@ -1,12 +1,9 @@
 ﻿using System.Reflection;
 using System.Text.Json;
-
 using Core.ApplicationLayer.Pipelines.Loggings.Abstractions;
 using Core.CrossCuttingConcernLayer.Loggings.Parameters;
 using Core.CrossCuttingConcernLayer.Loggings.Serilogs.Services;
-
 using MediatR;
-
 using Microsoft.AspNetCore.Http;
 
 namespace Core.ApplicationLayer.Pipelines.Loggings.Concretions;
@@ -32,11 +29,8 @@ public class LogAddingBehavior<TRequest, TResponse>(IHttpContextAccessor httpCon
 
     private static object Redact(TRequest request)
     {
-        if (SensitiveProperties.Length == 0)
-        {
-            return request;
-        }
-
-        return Properties.ToDictionary(p => p.Name, p => SensitiveProperties.Contains(p) ? RedactedValue : p.GetValue(request));
+        return SensitiveProperties.Length == 0
+            ? request
+            : Properties.ToDictionary(p => p.Name, p => SensitiveProperties.Contains(p) ? RedactedValue : p.GetValue(request));
     }
 }

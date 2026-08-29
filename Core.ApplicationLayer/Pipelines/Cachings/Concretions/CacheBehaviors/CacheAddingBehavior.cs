@@ -3,16 +3,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-
 using Core.ApplicationLayer.Pipelines.Cachings.Abstractions;
 using Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheSettings;
-
 using MediatR;
-
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-
 using StackExchange.Redis;
 
 namespace Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheBehaviors;
@@ -61,7 +57,7 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(
         }
         finally
         {
-            localLock.Release();
+            _ = localLock.Release();
         }
     }
 
@@ -101,7 +97,7 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(
         finally
         {
             const string releaseScript = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
-            await redisDatabase.ScriptEvaluateAsync(releaseScript, [lockKey], [lockToken]);
+            _ = await redisDatabase.ScriptEvaluateAsync(releaseScript, [lockKey], [lockToken]);
         }
     }
 
@@ -141,7 +137,9 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(
         LogAddedToCache(request.CacheKey);
 
         if (request.CacheGroupKey is string cacheGroupKey)
+        {
             await AddCacheKeyToGroup(cacheGroupKey, request.CacheKey, slidingExpiration, cancellationToken);
+        }
 
         return response;
     }
@@ -163,15 +161,15 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(
         string groupSetKey = $"{cacheGroupKey}:members";
         string groupExpirationKey = $"{cacheGroupKey}SlidingExpiration";
 
-        await redisDatabase.SetAddAsync(groupSetKey, cacheKey);
+        _ = await redisDatabase.SetAddAsync(groupSetKey, cacheKey);
 
         RedisValue existingExpiration = await redisDatabase.StringGetAsync(groupExpirationKey);
         int newExpirationSeconds = Convert.ToInt32(slidingExpiration.TotalSeconds);
 
         if (!existingExpiration.HasValue || newExpirationSeconds > (int)existingExpiration)
         {
-            await redisDatabase.StringSetAsync(groupExpirationKey, newExpirationSeconds, slidingExpiration);
-            await redisDatabase.KeyExpireAsync(groupSetKey, slidingExpiration);
+            _ = await redisDatabase.StringSetAsync(groupExpirationKey, newExpirationSeconds, slidingExpiration);
+            _ = await redisDatabase.KeyExpireAsync(groupSetKey, slidingExpiration);
         }
     }
 
@@ -184,7 +182,9 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(
             : [];
 
         if (!cacheKeysInGroup.Add(cacheKey))
+        {
             return;
+        }
 
         byte[] newCacheGroupCache = JsonSerializer.SerializeToUtf8Bytes(cacheKeysInGroup);
 
@@ -195,7 +195,9 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(
             : null;
 
         if (cacheGroupCacheSlidingExpirationValue == null || slidingExpiration.TotalSeconds > cacheGroupCacheSlidingExpirationValue)
+        {
             cacheGroupCacheSlidingExpirationValue = Convert.ToInt32(slidingExpiration.TotalSeconds);
+        }
 
         byte[] serializeCachedGroupSlidingExpirationData = JsonSerializer.SerializeToUtf8Bytes(cacheGroupCacheSlidingExpirationValue);
 

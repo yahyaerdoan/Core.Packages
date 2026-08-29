@@ -1,13 +1,11 @@
 using System.Text.Json;
-
 using Core.CrossCuttingConcernLayer.ExceptionHandlings.Exceptions;
 using Core.CrossCuttingConcernLayer.Loggings.Parameters;
 using Core.CrossCuttingConcernLayer.Loggings.Serilogs.Services;
-
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
-
 using ResultHandler.AspNetCore.Extensions;
 using ResultHandler.Core.Abstractions;
 using ResultHandler.Facade;
@@ -63,13 +61,12 @@ public class ExceptionMiddleware(RequestDelegate next, IHttpContextAccessor http
             BusinessRuleException businessRuleException => Result.Conflict(businessRuleException.Message),
             DbUpdateConcurrencyException => Result.Conflict("This record was modified by someone else. Please reload and try again."),
             DbUpdateException => Result.Conflict("This operation conflicts with existing data. Please check your input and try again."),
-            // Never echo raw exception text for truly unexpected failures in production — it can
-            // leak connection strings, hostnames, internal paths, etc. Full detail is already
-            // captured server-side via LogException above.
+            // Don't echo raw exception text in production - it can leak internals. Full detail is
+            // already captured server-side via LogException above.
             _ => Result.InternalServerError(hostEnvironment.IsDevelopment() ? exception.Message : GenericInternalServerErrorMessage)
         };
 
-        var problem = result.ToProblemDetails(httpContext);
+        ProblemDetails problem = result.ToProblemDetails(httpContext);
         httpContext.Response.StatusCode = problem.Status ?? StatusCodes.Status500InternalServerError;
         return httpContext.Response.WriteAsJsonAsync(problem);
     }

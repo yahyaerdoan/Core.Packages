@@ -1,9 +1,7 @@
 ﻿using System.Linq.Expressions;
-
 using Core.PersistenceLayer.Dynamics.Dynamic;
 using Core.PersistenceLayer.Pagings.Paging;
 using Core.PersistenceLayer.Repositories.Entities;
-
 using Microsoft.EntityFrameworkCore.Query;
 
 namespace Core.PersistenceLayer.Repositories.IRepositories;

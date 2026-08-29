@@ -1,10 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-
 using Core.SecurityLayer.Encryptions;
 using Core.SecurityLayer.Hashings;
 using Core.SecurityLayer.JsonWebTokens.Abstractions;
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
@@ -23,7 +21,7 @@ public class JwtTokenHelper : IJwtTokenHelper
 
     public AccessToken CreateToken(IEnumerable<Claim> claims)
     {
-        var accessTokenExpiration = DateTime.UtcNow.AddMinutes(_tokenOptions.AccessTokenExpiration);
+        DateTime accessTokenExpiration = DateTime.UtcNow.AddMinutes(_tokenOptions.AccessTokenExpiration);
         SecurityKey securityKey = SecurityKeyHelper.CreateSecurityKey(_tokenOptions.SecurityKey);
         SigningCredentials signingCredentials = SigningCredentialHelper.CreateSigningCredentials(securityKey);
 
@@ -43,8 +41,8 @@ public class JwtTokenHelper : IJwtTokenHelper
 
     public RefreshTokenResult CreateRefreshToken()
     {
-        var rawToken = SecureTokenGenerator.GenerateUrlSafeToken();
-        var expires = DateTime.UtcNow.AddMinutes(_tokenOptions.RefreshTokenTTL);
+        string rawToken = SecureTokenGenerator.GenerateUrlSafeToken();
+        DateTime expires = DateTime.UtcNow.AddMinutes(_tokenOptions.RefreshTokenTTL);
         return new RefreshTokenResult(rawToken, TokenHashingHelper.Hash(rawToken), expires);
     }
 }
