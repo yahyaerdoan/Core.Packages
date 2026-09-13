@@ -6,7 +6,7 @@ namespace Core.ApplicationLayer.Pipelines.Validations.Concretions;
 
 public class ValidationAddingBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validator) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
-    where TResponse : IOperationResult, IFieldFailureFactory<TResponse>
+    where TResponse : IOperationResult, IResultFailureFactory<TResponse>
 {
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
