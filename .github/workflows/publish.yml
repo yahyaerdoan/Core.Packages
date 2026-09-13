@@ -48,7 +48,7 @@ jobs:
         run: |
           dotnet nuget push "nupkgs/*.nupkg" \
             --api-key "${{ secrets.GH_PACKAGES_TOKEN }}" \
-            --source "github" \
+            --source "https://api.nuget.org/v3/index.json" \
             --skip-duplicate
 
       - name: NuGet login (OIDC -> temp API key)
