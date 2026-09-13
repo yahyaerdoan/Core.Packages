@@ -8,9 +8,11 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
-      id-token: write  # required for NuGet Trusted Publishing (OIDC)
+      id-token: write
+
     steps:
       - uses: actions/checkout@v7
 
@@ -22,23 +24,30 @@ jobs:
         id: version
         run: |
           version="1.0.${{ github.run_number }}"
+
           if [ "${{ github.ref_name }}" = "beta" ]; then
             version="${version}-beta.${{ github.run_number }}"
           fi
+
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Restore
         run: dotnet restore Core.Packages.sln
 
-      - name: Build and pack (version ${{ steps.version.outputs.version }})
+      - name: Build and pack
         run: |
           dotnet build Core.Packages.sln --configuration Release \
             -p:Version=${{ steps.version.outputs.version }} \
             -p:PackageOutputPath=${{ github.workspace }}/nupkgs
 
+      # ==========================================
+      # GitHub Packages
+      # ==========================================
+
       - name: Add GitHub Packages source
         run: |
-          dotnet nuget add source "https://nuget.pkg.github.com/yahyaerdoan/index.json" \
+          dotnet nuget add source \
+            "https://nuget.pkg.github.com/yahyaerdoan/index.json" \
             --name github \
             --username yahyaerdoan \
             --password "${{ secrets.GH_PACKAGES_TOKEN }}" \
@@ -48,8 +57,12 @@ jobs:
         run: |
           dotnet nuget push "nupkgs/*.nupkg" \
             --api-key "${{ secrets.GH_PACKAGES_TOKEN }}" \
-            --source "https://api.nuget.org/v3/index.json" \
+            --source "github" \
             --skip-duplicate
+
+      # ==========================================
+      # NuGet.org
+      # ==========================================
 
       - name: NuGet login (OIDC -> temp API key)
         uses: NuGet/login@v1
