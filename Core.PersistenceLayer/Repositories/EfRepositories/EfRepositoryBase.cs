@@ -52,7 +52,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
 
         if (withDeleted)
         {
-            queryable = queryable.IgnoreQueryFilters();
+            queryable = queryable.IgnoreQueryFilters([QueryFilterNames.SoftDelete]);
         }
 
         if (predicate != null)
@@ -94,7 +94,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
 
         if (withDeleted)
         {
-            queryable = queryable.IgnoreQueryFilters();
+            queryable = queryable.IgnoreQueryFilters([QueryFilterNames.SoftDelete]);
         }
 
         if (predicate != null)
@@ -124,7 +124,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
 
         if (withDeleted)
         {
-            queryable = queryable.IgnoreQueryFilters();
+            queryable = queryable.IgnoreQueryFilters([QueryFilterNames.SoftDelete]);
         }
 
         if (predicate != null)
@@ -155,7 +155,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
 
         if (withDeleted)
         {
-            queryable = queryable.IgnoreQueryFilters();
+            queryable = queryable.IgnoreQueryFilters([QueryFilterNames.SoftDelete]);
         }
 
         if (predicate != null)
