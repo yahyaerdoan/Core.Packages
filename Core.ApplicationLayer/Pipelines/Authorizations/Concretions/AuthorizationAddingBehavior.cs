@@ -29,6 +29,7 @@ public class AuthorizationAddingBehavior<TRequest, TResponse>(IHttpContextAccess
         List<string> userPermissionClaims = httpContextAccessor.HttpContext.User.ClaimPermissions() ?? [];
 
         bool isMatched = userPermissionClaims.Contains(PermissionClaimTypes.FullAccess)
+            || (request.AllowTenantBypass && userPermissionClaims.Contains(PermissionClaimTypes.TenantFullAccess))
             || request.Roles.Any(role => userRoleClaims.Contains(role) || userPermissionClaims.Contains(role));
         return !isMatched ? ResultFailureFactory.Forbidden<TResponse>("You are not authorized.") : await next(cancellationToken);
     }
