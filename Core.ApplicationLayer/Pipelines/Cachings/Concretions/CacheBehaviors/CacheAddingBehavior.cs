@@ -9,16 +9,13 @@ using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using ResultHandler.Core.Abstractions;
 using StackExchange.Redis;
 
 namespace Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheBehaviors;
 
-public partial class CacheAddingBehavior<TRequest, TResponse>(
-    IDistributedCache distributedCache,
-    IConfiguration configuration,
-    ILogger<CacheAddingBehavior<TRequest, TResponse>> logger,
-    IConnectionMultiplexer? redisConnectionMultiplexer = null) :
-    IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICacheAddRequest
+public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache distributedCache, IConfiguration configuration, ILogger<CacheAddingBehavior<TRequest, TResponse>> logger, IConnectionMultiplexer? redisConnectionMultiplexer = null) 
+    : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICacheAddRequest
 {
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_keyLocks = new();
 
@@ -107,6 +104,13 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(
         try
         {
             value = JsonSerializer.Deserialize<TResponse>(json);
+            if (value is IOperationResult { IsSuccessful: false })
+            {
+                LogIgnoredCachedFailure(cacheKey);
+                value = default;
+                return false;
+            }
+
             return value is not null;
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException)
@@ -120,6 +124,12 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(
     private async Task<TResponse> GetResponseAndAddToCache(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         TResponse response = await next(cancellationToken);
+
+        if (response is IOperationResult { IsSuccessful: false })
+        {
+            LogSkippedFailedResponse(request.CacheKey);
+            return response;
+        }
 
         TimeSpan slidingExpiration = request.SlidingExpiration ?? TimeSpan.FromDays(_cacheSettings.SlidingExpiration);
         TimeSpan absoluteCap = TimeSpan.FromDays(_cacheSettings.AbsoluteExpirationCapInDays);
@@ -216,6 +226,12 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(
 
     [LoggerMessage(EventId = 5, Level = LogLevel.Warning, Message = "Failed to deserialize cached response -> {CacheKey}, falling back to a fresh fetch")]
     private partial void LogFailedToDeserializeCache(string cacheKey, Exception exception);
+
+    [LoggerMessage(EventId = 6, Level = LogLevel.Information, Message = "Skipped caching a failed response -> {CacheKey}")]
+    private partial void LogSkippedFailedResponse(string cacheKey);
+
+    [LoggerMessage(EventId = 7, Level = LogLevel.Information, Message = "Ignored a cached failed response, falling back to a fresh fetch -> {CacheKey}")]
+    private partial void LogIgnoredCachedFailure(string cacheKey);
 
     [LoggerMessage(EventId = 2, Level = LogLevel.Information, Message = "Added to Cache -> {CacheKey}")]
     private partial void LogAddedToCache(string cacheKey);
