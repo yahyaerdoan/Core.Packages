@@ -1,8 +1,6 @@
 namespace Core.PersistenceLayer.Repositories.Entities;
 
-/// <summary>Guid-keyed entity that self-assigns a UUIDv7 (time-ordered) id - avoids clustered-index
-/// fragmentation from random inserts. Purely additive, opt-in - plain Entity of any key type is
-/// unaffected. Same technique as Core.SecurityLayer's SequentialGuidIdentityUser/Role.</summary>
+/// <summary>Opt-in Guid entity - self-assigns a sequential (UUIDv7) id to avoid index fragmentation.</summary>
 public abstract class SequentialGuidEntity : Entity<Guid>
 {
     protected SequentialGuidEntity()
