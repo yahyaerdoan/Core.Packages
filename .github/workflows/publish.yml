@@ -8,10 +8,16 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v6
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
@@ -19,31 +25,74 @@ jobs:
         id: version
         run: |
           version="1.0.${{ github.run_number }}"
+
           if [ "${{ github.ref_name }}" = "beta" ]; then
             version="${version}-beta.${{ github.run_number }}"
           fi
+
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Restore
         run: dotnet restore Core.Packages.sln
 
-      - name: Build and pack (version ${{ steps.version.outputs.version }})
+      - name: Build and pack
         run: |
-          dotnet build Core.Packages.sln --configuration Release \
+          dotnet build Core.Packages.sln \
+            --configuration Release \
             -p:Version=${{ steps.version.outputs.version }} \
             -p:PackageOutputPath=${{ github.workspace }}/nupkgs
 
+      # ==========================================
+      # GitHub Packages
+      # ==========================================
+
       - name: Add GitHub Packages source
         run: |
-          dotnet nuget add source "https://nuget.pkg.github.com/yahyaerdoan/index.json" \
+          dotnet nuget add source \
+            "https://nuget.pkg.github.com/yahyaerdoan/index.json" \
             --name github \
-            --username yahyaerdoan \
-            --password "${{ secrets.GH_PACKAGES_TOKEN }}" \
+            --username "${{ github.actor }}" \
+            --password "${{ secrets.GITHUB_TOKEN }}" \
             --store-password-in-clear-text
 
       - name: Push packages to GitHub Packages
         run: |
-          dotnet nuget push "nupkgs/*.nupkg" \
-            --api-key "${{ secrets.GH_PACKAGES_TOKEN }}" \
-            --source "github" \
-            --skip-duplicate
+          packages=(nupkgs/*.nupkg)
+
+          if [ ! -e "${packages[0]}" ]; then
+            echo "No .nupkg files found in nupkgs"
+            exit 1
+          fi
+
+          for package in "${packages[@]}"; do
+            dotnet nuget push "$package" \
+              --api-key "${{ secrets.GITHUB_TOKEN }}" \
+              --source "github" \
+              --skip-duplicate
+          done
+
+      # ==========================================
+      # NuGet.org
+      # ==========================================
+
+      - name: NuGet login (OIDC -> temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push packages to NuGet.org
+        run: |
+          packages=(nupkgs/*.nupkg)
+
+          if [ ! -e "${packages[0]}" ]; then
+            echo "No .nupkg files found in nupkgs"
+            exit 1
+          fi
+
+          for package in "${packages[@]}"; do
+            dotnet nuget push "$package" \
+              --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
+              --source "https://api.nuget.org/v3/index.json" \
+              --skip-duplicate
+          done

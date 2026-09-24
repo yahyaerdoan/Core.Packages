@@ -1,11 +1,8 @@
 ﻿using System.Globalization;
-
 using Core.CrossCuttingConcernLayer.Loggings.Serilogs.ConfigurationModels;
 using Core.CrossCuttingConcernLayer.Loggings.Serilogs.Messages;
 using Core.CrossCuttingConcernLayer.Loggings.Serilogs.Services;
-
 using Microsoft.Extensions.Configuration;
-
 using Serilog;
 
 namespace Core.CrossCuttingConcernLayer.Loggings.Serilogs.Loggers;

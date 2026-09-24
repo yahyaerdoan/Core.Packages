@@ -1,8 +1,7 @@
-﻿using System.Transactions;
-
+using System.Transactions;
 using Core.ApplicationLayer.Pipelines.Transactions.Abstractions;
-
 using MediatR;
+using ResultHandler.Core.Abstractions;
 
 namespace Core.ApplicationLayer.Pipelines.Transactions.Concretions;
 
@@ -11,18 +10,14 @@ public class TransactionAddingBehavior<TRequest, TResponse> : IPipelineBehavior<
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         using TransactionScope transactionScope = new(TransactionScopeAsyncFlowOption.Enabled);
-        TResponse response;
-        try
+
+        TResponse response = await next(cancellationToken);
+
+        if (response is not IOperationResult { IsSuccessful: false })
         {
-            response = await next(cancellationToken);
             transactionScope.Complete();
         }
-        catch (Exception)
-        {
 
-            transactionScope.Dispose();
-            throw;
-        }
         return response;
     }
 }

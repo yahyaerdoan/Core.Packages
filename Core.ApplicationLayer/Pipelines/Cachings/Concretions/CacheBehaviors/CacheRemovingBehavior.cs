@@ -1,10 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
-
 using Core.ApplicationLayer.Pipelines.Cachings.Abstractions;
-
 using MediatR;
-
 using Microsoft.Extensions.Caching.Distributed;
 
 namespace Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheBehaviors;
@@ -31,7 +28,7 @@ public class CacheRemovingBehavior<TRequest, TResponse>(IDistributedCache distri
                 }
 
                 await distributedCache.RemoveAsync(request.CacheGroupKey, cancellationToken);
-                await distributedCache.RemoveAsync(key: $"{request.CacheGroupKey} SlidingExpiration", cancellationToken);
+                await distributedCache.RemoveAsync(key: $"{request.CacheGroupKey}SlidingExpiration", cancellationToken);
             }
         }
 

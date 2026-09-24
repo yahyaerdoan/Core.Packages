@@ -1,11 +1,8 @@
 using Core.ApplicationLayer.Pipelines.Authorizations.Abstractions;
 using Core.SecurityLayer.Constants;
 using Core.SecurityLayer.Extensions;
-
 using MediatR;
-
 using Microsoft.AspNetCore.Http;
-
 using ResultHandler.Core.Abstractions;
 using ResultHandler.Functional;
 
@@ -19,13 +16,21 @@ public class AuthorizationAddingBehavior<TRequest, TResponse>(IHttpContextAccess
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated is not true)
+        {
             return ResultFailureFactory.Unauthorized<TResponse>("You are not authenticated.");
+        }
+
+        if (request.Roles.Length == 0)
+        {
+            return await next(cancellationToken);
+        }
 
         List<string> userRoleClaims = httpContextAccessor.HttpContext.User.ClaimRoles() ?? [];
-        bool isMatched = userRoleClaims.Any(userRoleClaim => userRoleClaim == GeneralOperationClaims.Admin || request.Roles.Any(role => role == userRoleClaim));
-        if (!isMatched)
-            return ResultFailureFactory.Forbidden<TResponse>("You are not authorized.");
+        List<string> userPermissionClaims = httpContextAccessor.HttpContext.User.ClaimPermissions() ?? [];
 
-        return await next(cancellationToken);
+        bool isMatched = userPermissionClaims.Contains(PermissionClaimTypes.FullAccess)
+            || (request.AllowTenantBypass && userPermissionClaims.Contains(PermissionClaimTypes.TenantFullAccess))
+            || request.Roles.Any(role => userRoleClaims.Contains(role) || userPermissionClaims.Contains(role));
+        return !isMatched ? ResultFailureFactory.Forbidden<TResponse>("You are not authorized.") : await next(cancellationToken);
     }
 }

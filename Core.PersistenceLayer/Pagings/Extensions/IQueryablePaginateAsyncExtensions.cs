@@ -1,5 +1,4 @@
 ﻿using Core.PersistenceLayer.Pagings.Paging;
-
 using Microsoft.EntityFrameworkCore;
 
 namespace Core.PersistenceLayer.Pagings.Extensions;

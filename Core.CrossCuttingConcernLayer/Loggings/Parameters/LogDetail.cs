@@ -7,6 +7,10 @@ public class LogDetail
     public string User { get; set; }
     public List<LogParameter> Parameters { get; set; }
 
+    /// <summary>Set only by outcome-logging behaviors (e.g. LogResultAddingBehavior); null for
+    /// request-only logging, which runs before a result exists.</summary>
+    public object? Result { get; set; }
+
     public LogDetail()
     {
         FullName = string.Empty;

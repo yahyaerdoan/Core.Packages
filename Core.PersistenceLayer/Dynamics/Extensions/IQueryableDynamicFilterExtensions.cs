@@ -1,7 +1,6 @@
 ﻿using System.Globalization;
 using System.Linq.Dynamic.Core;
 using System.Text;
-
 using Core.PersistenceLayer.Dynamics.Dynamic;
 
 namespace Core.PersistenceLayer.Dynamics.Extensions;
@@ -30,9 +29,15 @@ public static class IQueryableDynamicFilterExtensions
     public static IQueryable<T> ToDynamic<T>(this IQueryable<T> query, DynamicQuery dynamicQuery)
     {
         if (dynamicQuery.Filter is not null)
+        {
             query = Filter(query, dynamicQuery.Filter);
+        }
+
         if (dynamicQuery.Sort is not null && dynamicQuery.Sort.Any())
+        {
             query = Sort(query, dynamicQuery.Sort);
+        }
+
         return query;
     }
 
@@ -42,7 +47,9 @@ public static class IQueryableDynamicFilterExtensions
         string?[] values = [.. filters.Select(f => f.Value)];
         string where = Transform(filter, filters);
         if (!string.IsNullOrEmpty(where) && values != null)
+        {
             queryable = queryable.Where(where, values);
+        }
 
         return queryable;
     }
@@ -52,9 +59,14 @@ public static class IQueryableDynamicFilterExtensions
         foreach (Sort item in sort)
         {
             if (string.IsNullOrEmpty(item.Field))
+            {
                 throw new ArgumentException("Invalid Field");
+            }
+
             if (string.IsNullOrEmpty(item.Direction) || !Orders.Contains(item.Direction))
+            {
                 throw new ArgumentException("Invalid Order Type");
+            }
         }
 
         if (sort.Any())
@@ -77,41 +89,46 @@ public static class IQueryableDynamicFilterExtensions
     {
         filters.Add(filter);
         if (filter.Filters is not null && filter.Filters.Any())
+        {
             foreach (Filter item in filter.Filters)
+            {
                 GetFilters(item, filters);
+            }
+        }
     }
 
     public static string Transform(Filter filter, IList<Filter> filters)
     {
         if (string.IsNullOrEmpty(filter.Field))
+        {
             throw new ArgumentException("Invalid Field");
+        }
+
         if (string.IsNullOrEmpty(filter.Operator) || !Operators.TryGetValue(filter.Operator, out string? comparison))
+        {
             throw new ArgumentException("Invalid Operator");
+        }
 
         int index = filters.IndexOf(filter);
         StringBuilder where = new();
 
         if (!string.IsNullOrEmpty(filter.Value))
         {
-            if (filter.Operator == "doesnotcontain")
-                where.Append(CultureInfo.InvariantCulture, $"(!np({filter.Field}).{comparison}(@{index}))");
-            else if (comparison is "StartsWith" or "EndsWith" or "Contains")
-                where.Append(CultureInfo.InvariantCulture, $"(np({filter.Field}).{comparison}(@{index}))");
-            else
-                where.Append(CultureInfo.InvariantCulture, $"np({filter.Field}) {comparison} @{index}");
+            _ = filter.Operator == "doesnotcontain"
+                ? where.Append(CultureInfo.InvariantCulture, $"(!np({filter.Field}).{comparison}(@{index}))")
+                : comparison is "StartsWith" or "EndsWith" or "Contains"
+                    ? where.Append(CultureInfo.InvariantCulture, $"(np({filter.Field}).{comparison}(@{index}))")
+                    : where.Append(CultureInfo.InvariantCulture, $"np({filter.Field}) {comparison} @{index}");
         }
         else if (filter.Operator is "isnull" or "isnotnull")
         {
-            where.Append(CultureInfo.InvariantCulture, $"np({filter.Field}) {comparison}");
+            _ = where.Append(CultureInfo.InvariantCulture, $"np({filter.Field}) {comparison}");
         }
 
-        if (filter.Logic is not null && filter.Filters is not null && filter.Filters.Any())
-        {
-            if (!Logics.Contains(filter.Logic))
-                throw new ArgumentException("Invalid Logic");
-            return $"{where} {filter.Logic} ({string.Join(separator: $" {filter.Logic} ", value: filter.Filters.Select(f => Transform(f, filters)).ToArray())})";
-        }
-
-        return where.ToString();
+        return filter.Logic is not null && filter.Filters is not null && filter.Filters.Any()
+            ? !Logics.Contains(filter.Logic)
+                ? throw new ArgumentException("Invalid Logic")
+                : $"{where} {filter.Logic} ({string.Join(separator: $" {filter.Logic} ", value: filter.Filters.Select(f => Transform(f, filters)).ToArray())})"
+            : where.ToString();
     }
 }
