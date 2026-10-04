@@ -13,10 +13,11 @@ public static class IQueryablePaginateAsyncExtensions
     {
         PagingGuard.Validate(index, size);
 
-        int count = await source.CountAsync(cancellationToken).ConfigureAwait(false);
-        List<T> items = PagingGuard.SkipFor(index, size) is { } skip
-            ? await source.Skip(skip).Take(size).ToListAsync(cancellationToken).ConfigureAwait(false)
+        int? skip = PagingGuard.SkipFor(index, size);
+        List<T> items = skip is { } rows
+            ? await source.Skip(rows).Take(size).ToListAsync(cancellationToken).ConfigureAwait(false)
             : [];
+        int count = PagingGuard.KnownCount(skip, size, items.Count) ?? await source.CountAsync(cancellationToken).ConfigureAwait(false);
 
         return new Paginate<T>
         {
