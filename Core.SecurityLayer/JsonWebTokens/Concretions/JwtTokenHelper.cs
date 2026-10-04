@@ -3,21 +3,14 @@ using System.Security.Claims;
 using Core.SecurityLayer.Encryptions;
 using Core.SecurityLayer.Hashings;
 using Core.SecurityLayer.JsonWebTokens.Abstractions;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Core.SecurityLayer.JsonWebTokens.Concretions;
 
-public class JwtTokenHelper : IJwtTokenHelper
+public class JwtTokenHelper(IOptions<TokenOption> tokenOptions) : IJwtTokenHelper
 {
-    private readonly TokenOption _tokenOptions;
-
-    public JwtTokenHelper(IConfiguration configuration)
-    {
-        const string configurationSection = "TokenOptions";
-        _tokenOptions = configuration.GetSection(configurationSection).Get<TokenOption>()
-            ?? throw new InvalidOperationException($"\"{configurationSection}\" section cannot found in configuration.");
-    }
+    private readonly TokenOption _tokenOptions = tokenOptions.Value;
 
     public AccessToken CreateToken(IEnumerable<Claim> claims)
     {
