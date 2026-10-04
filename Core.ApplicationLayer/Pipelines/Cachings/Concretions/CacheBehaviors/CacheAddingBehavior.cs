@@ -7,20 +7,19 @@ using Core.ApplicationLayer.Pipelines.Cachings.Abstractions;
 using Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheSettings;
 using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ResultHandler.Core.Abstractions;
 using StackExchange.Redis;
 
 namespace Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheBehaviors;
 
-public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache distributedCache, IConfiguration configuration, ILogger<CacheAddingBehavior<TRequest, TResponse>> logger, IConnectionMultiplexer? redisConnectionMultiplexer = null) 
+public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache distributedCache, IOptions<CacheSetting> cacheSettings, ILogger<CacheAddingBehavior<TRequest, TResponse>> logger, IConnectionMultiplexer? redisConnectionMultiplexer = null) 
     : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICacheAddRequest
 {
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_keyLocks = new();
 
-    private readonly CacheSetting _cacheSettings =
-        configuration.GetSection("CacheSettings").Get<CacheSetting>() ?? throw new InvalidOperationException();
+    private readonly CacheSetting _cacheSettings = cacheSettings.Value;
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
