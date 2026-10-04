@@ -21,36 +21,29 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
 {
     protected TContext Context { get; } = context;
 
-    public async Task<TEntity> AddAsync(TEntity entity)
+    public async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         entity.CreatedDate = DateTimeOffset.UtcNow;
-        _ = await Context.AddAsync(entity);
-        _ = await Context.SaveChangesAsync();
+        _ = await Context.AddAsync(entity, cancellationToken);
+        _ = await Context.SaveChangesAsync(cancellationToken);
         return entity;
     }
 
-    public async Task<ICollection<TEntity>> AddRangeAsync(ICollection<TEntity> entities)
+    public async Task<ICollection<TEntity>> AddRangeAsync(ICollection<TEntity> entities, CancellationToken cancellationToken = default)
     {
         foreach (TEntity entity in entities)
         {
             entity.CreatedDate = DateTimeOffset.UtcNow;
         }
 
-        await Context.AddRangeAsync(entities);
-        _ = await Context.SaveChangesAsync();
+        await Context.AddRangeAsync(entities, cancellationToken);
+        _ = await Context.SaveChangesAsync(cancellationToken);
         return entities;
     }
 
-    public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>>? predicate = null, bool withDeleted = false,
-        bool enableTracking = false, CancellationToken cancellationToken = default)
+    public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>>? predicate = null, bool withDeleted = false, CancellationToken cancellationToken = default)
     {
-
         IQueryable<TEntity> queryable = Query();
-        if (!enableTracking)
-        {
-            queryable = queryable.AsNoTracking();
-        }
-
         if (withDeleted)
         {
             queryable = queryable.IgnoreQueryFilters([QueryFilterNames.SoftDelete]);
@@ -64,17 +57,17 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
         return await queryable.AnyAsync(cancellationToken);
     }
 
-    public async Task<TEntity> DeleteAsync(TEntity entity, bool permanent = false)
+    public async Task<TEntity> DeleteAsync(TEntity entity, bool permanent = false, CancellationToken cancellationToken = default)
     {
-        await SetEntityDeletedAsync(entity, permanent);
-        _ = await Context.SaveChangesAsync();
+        await SetEntityDeletedAsync(entity, permanent, cancellationToken);
+        _ = await Context.SaveChangesAsync(cancellationToken);
         return entity;
     }
 
-    public async Task<ICollection<TEntity>> DeleteRangeAsync(ICollection<TEntity> entities, bool permanent = false)
+    public async Task<ICollection<TEntity>> DeleteRangeAsync(ICollection<TEntity> entities, bool permanent = false, CancellationToken cancellationToken = default)
     {
-        await SetEntityAsDeletedAsync(entities, permanent);
-        _ = await Context.SaveChangesAsync();
+        await SetEntityAsDeletedAsync(entities, permanent, cancellationToken);
+        _ = await Context.SaveChangesAsync(cancellationToken);
         return entities;
     }
 
@@ -104,6 +97,35 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
         }
 
         return await queryable.FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>>? predicate = null,
+        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
+        Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null,
+        bool withDeleted = false, bool enableTracking = false, CancellationToken cancellationToken = default)
+    {
+        IQueryable<TEntity> queryable = Query();
+        if (!enableTracking)
+        {
+            queryable = queryable.AsNoTracking();
+        }
+
+        if (include != null)
+        {
+            queryable = include(queryable);
+        }
+
+        if (withDeleted)
+        {
+            queryable = queryable.IgnoreQueryFilters([QueryFilterNames.SoftDelete]);
+        }
+
+        if (predicate != null)
+        {
+            queryable = queryable.Where(predicate);
+        }
+
+        return await (orderBy ?? OrderById)(queryable).ToListAsync(cancellationToken);
     }
 
     public async Task<Paginate<TEntity>> GetListAsync(Expression<Func<TEntity, bool>>? predicate = null,
@@ -175,15 +197,15 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
         return Context.Set<TEntity>();
     }
 
-    public async Task<TEntity> UpdateAsync(TEntity entity)
+    public async Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         entity.UpdatedDate = DateTimeOffset.UtcNow;
         AttachForUpdate(entity);
-        _ = await Context.SaveChangesAsync();
+        _ = await Context.SaveChangesAsync(cancellationToken);
         return entity;
     }
 
-    public async Task<ICollection<TEntity>> UpdateRangeAsync(ICollection<TEntity> entities)
+    public async Task<ICollection<TEntity>> UpdateRangeAsync(ICollection<TEntity> entities, CancellationToken cancellationToken = default)
     {
         foreach (TEntity entity in entities)
         {
@@ -191,17 +213,17 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
             AttachForUpdate(entity);
         }
 
-        _ = await Context.SaveChangesAsync();
+        _ = await Context.SaveChangesAsync(cancellationToken);
         return entities;
     }
 
     #region Extensions Methods
-    protected async Task SetEntityDeletedAsync(TEntity entity, bool permanent)
+    protected async Task SetEntityDeletedAsync(TEntity entity, bool permanent, CancellationToken cancellationToken = default)
     {
         if (!permanent)
         {
             CheckHasEntityHaveOneToOneRelation(entity);
-            await SetEntityAsSoftDeletedAsync(entity);
+            await SetEntityAsSoftDeletedAsync(entity, cancellationToken);
         }
         else
         {
@@ -218,7 +240,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
             );
         }
     }
-    protected async Task SetEntityAsSoftDeletedAsync(IEntityTimeStamps entity)
+    protected async Task SetEntityAsSoftDeletedAsync(IEntityTimeStamps entity, CancellationToken cancellationToken = default)
     {
         if (entity.DeletedDate.HasValue)
         {
@@ -249,11 +271,11 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
                 CollectionEntry collection = Context.Entry(entity).Collection(navigation.PropertyInfo.Name);
                 IEnumerable children = collection.IsLoaded && navigation.PropertyInfo.GetValue(entity) is IEnumerable loaded
                     ? loaded.Cast<object>().ToList()
-                    : await GetRelationLoaderQuery(collection.Query()).ToListAsync();
+                    : await GetRelationLoaderQuery(collection.Query()).ToListAsync(cancellationToken);
 
                 foreach (IEntityTimeStamps child in children)
                 {
-                    await SetEntityAsSoftDeletedAsync(child);
+                    await SetEntityAsSoftDeletedAsync(child, cancellationToken);
                 }
             }
             else
@@ -261,11 +283,11 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
                 ReferenceEntry reference = Context.Entry(entity).Reference(navigation.PropertyInfo.Name);
                 object? child = reference.IsLoaded
                     ? navigation.PropertyInfo.GetValue(entity)
-                    : await GetRelationLoaderQuery(reference.Query()).FirstOrDefaultAsync();
+                    : await GetRelationLoaderQuery(reference.Query()).FirstOrDefaultAsync(cancellationToken);
 
                 if (child is IEntityTimeStamps timeStamped)
                 {
-                    await SetEntityAsSoftDeletedAsync(timeStamped);
+                    await SetEntityAsSoftDeletedAsync(timeStamped, cancellationToken);
                 }
             }
         }
@@ -293,11 +315,11 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
         return query.Cast<object>().Where(x => !((IEntityTimeStamps)x).DeletedDate.HasValue);
     }
 
-    protected async Task SetEntityAsDeletedAsync(IEnumerable<TEntity> entities, bool permanent)
+    protected async Task SetEntityAsDeletedAsync(IEnumerable<TEntity> entities, bool permanent, CancellationToken cancellationToken = default)
     {
         foreach (TEntity entity in entities)
         {
-            await SetEntityDeletedAsync(entity, permanent);
+            await SetEntityDeletedAsync(entity, permanent, cancellationToken);
         }
     }
 

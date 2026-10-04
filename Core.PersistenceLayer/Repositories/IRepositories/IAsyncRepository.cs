@@ -33,15 +33,22 @@ public interface IAsyncRepository<TEntity, TEntityId> : IQuery<TEntity> where TE
         bool withDeleted = false,
         bool enableTracking = false,
         CancellationToken cancellationToken = default);
-    Task<bool> AnyAsync(
+    /// <summary>Every matching entity, without paging or a count query; ordered by Id when no order is given.</summary>
+    Task<IReadOnlyList<TEntity>> GetAllAsync(
         Expression<Func<TEntity, bool>>? predicate = null,
+        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
+        Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null,
         bool withDeleted = false,
         bool enableTracking = false,
         CancellationToken cancellationToken = default);
-    Task<TEntity> AddAsync(TEntity entity);
-    Task<ICollection<TEntity>> AddRangeAsync(ICollection<TEntity> entities);
-    Task<TEntity> UpdateAsync(TEntity entity);
-    Task<ICollection<TEntity>> UpdateRangeAsync(ICollection<TEntity> entities);
-    Task<TEntity> DeleteAsync(TEntity entity, bool permanent = false);
-    Task<ICollection<TEntity>> DeleteRangeAsync(ICollection<TEntity> entities, bool permanent = false);
+    Task<bool> AnyAsync(
+        Expression<Func<TEntity, bool>>? predicate = null,
+        bool withDeleted = false,
+        CancellationToken cancellationToken = default);
+    Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default);
+    Task<ICollection<TEntity>> AddRangeAsync(ICollection<TEntity> entities, CancellationToken cancellationToken = default);
+    Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default);
+    Task<ICollection<TEntity>> UpdateRangeAsync(ICollection<TEntity> entities, CancellationToken cancellationToken = default);
+    Task<TEntity> DeleteAsync(TEntity entity, bool permanent = false, CancellationToken cancellationToken = default);
+    Task<ICollection<TEntity>> DeleteRangeAsync(ICollection<TEntity> entities, bool permanent = false, CancellationToken cancellationToken = default);
 }
