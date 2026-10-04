@@ -11,17 +11,20 @@ public static class IQueryablePaginateAsyncExtensions
         int size,
         CancellationToken cancellationToken = default)
     {
+        PagingGuard.Validate(index, size);
+
         int count = await source.CountAsync(cancellationToken).ConfigureAwait(false);
-        List<T> items = await source.Skip(index * size).Take(size).ToListAsync(cancellationToken).ConfigureAwait(false);
-        Paginate<T> result = new()
+        List<T> items = PagingGuard.SkipFor(index, size) is { } skip
+            ? await source.Skip(skip).Take(size).ToListAsync(cancellationToken).ConfigureAwait(false)
+            : [];
+
+        return new Paginate<T>
         {
             Index = index,
             Count = count,
             Items = items,
             Size = size,
-            Pages = (int)Math.Ceiling(count / (double)size)
-
+            Pages = PagingGuard.Pages(count, size),
         };
-        return result;
     }
 }
