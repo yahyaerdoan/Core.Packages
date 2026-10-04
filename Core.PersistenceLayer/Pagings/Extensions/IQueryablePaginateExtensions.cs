@@ -11,8 +11,9 @@ public static class IQueryablePaginateExtensions
     {
         PagingGuard.Validate(index, size);
 
-        int count = source.Count();
-        List<T> items = PagingGuard.SkipFor(index, size) is { } skip ? [.. source.Skip(skip).Take(size)] : [];
+        int? skip = PagingGuard.SkipFor(index, size);
+        List<T> items = skip is { } rows ? [.. source.Skip(rows).Take(size)] : [];
+        int count = PagingGuard.KnownCount(skip, size, items.Count) ?? source.Count();
 
         return new Paginate<T>
         {

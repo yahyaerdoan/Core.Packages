@@ -16,4 +16,8 @@ internal static class PagingGuard
     }
 
     public static int Pages(int count, int size) => (int)((count + (long)size - 1) / size);
+
+    /// <summary>The total when the fetched page already proves it (a partly filled page is the last one), so no COUNT query is needed.</summary>
+    public static int? KnownCount(int? skip, int size, int itemCount) =>
+        skip is { } rows && itemCount < size && (itemCount > 0 || rows == 0) ? rows + itemCount : null;
 }

@@ -66,6 +66,7 @@ public class ExceptionMiddleware(RequestDelegate next, IHttpContextAccessor http
             BadHttpRequestException badHttpRequestException => Result.BadRequest(ClientSafe(badHttpRequestException.Message, GenericBadRequestMessage)),
             JsonException jsonException => Result.BadRequest(ClientSafe(jsonException.Message, GenericInvalidJsonMessage)),
             BusinessRuleException businessRuleException => Result.Conflict(businessRuleException.Message),
+            DynamicQueryException dynamicQueryException => Result.BadRequest(dynamicQueryException.Message),
             DbUpdateConcurrencyException => Result.Conflict("This record was modified by someone else. Please reload and try again."),
             DbUpdateException => Result.Conflict("This operation conflicts with existing data. Please check your input and try again."),
             _ => Result.InternalServerError(ClientSafe(exception.Message, GenericInternalServerErrorMessage))

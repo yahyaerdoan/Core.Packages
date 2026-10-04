@@ -1,44 +1,50 @@
 ﻿using System.Globalization;
 using System.Linq.Dynamic.Core;
+using System.Linq.Dynamic.Core.Exceptions;
 using System.Text;
+using Core.CrossCuttingConcernLayer.ExceptionHandlings.Exceptions;
 using Core.PersistenceLayer.Dynamics.Dynamic;
 
 namespace Core.PersistenceLayer.Dynamics.Extensions;
 
 public static class IQueryableDynamicFilterExtensions
 {
-    private static readonly string[] Orders = ["asc", "desc"];
-    private static readonly string[] Logics = ["and", "or"];
+    private static readonly string[] Orders = DynamicQueryRules.Directions;
+    private static readonly string[] Logics = DynamicQueryRules.Logics;
+    private static readonly Dictionary<string, string> Operators = DynamicQueryRules.Operators;
 
-    private static readonly Dictionary<string, string> Operators = new()
-    {
-        { "eq", "=" },
-        { "neq", "!=" },
-        { "lt", "<" },
-        { "lte", "<=" },
-        { "gt", ">" },
-        { "gte", ">=" },
-        { "isnull", "== null" },
-        { "isnotnull", "!= null" },
-        { "startswith", "StartsWith" },
-        { "endswith", "EndsWith" },
-        { "contains", "Contains" },
-        { "doesnotcontain", "Contains" }
-    };
+    public static IQueryable<T> ToDynamic<T>(this IQueryable<T> query, DynamicQuery dynamicQuery) => query.ToDynamic(dynamicQuery, allowedFields: null);
 
-    public static IQueryable<T> ToDynamic<T>(this IQueryable<T> query, DynamicQuery dynamicQuery)
+    /// <summary>
+    /// Applies the client's filter and sort. With <paramref name="allowedFields"/> only those fields may be used; anything that can't be applied
+    /// throws <see cref="DynamicQueryException"/> (a 400), never a server error.
+    /// </summary>
+    public static IQueryable<T> ToDynamic<T>(this IQueryable<T> query, DynamicQuery dynamicQuery, IReadOnlySet<string>? allowedFields)
     {
-        if (dynamicQuery.Filter is not null)
+        IReadOnlyList<string> errors = DynamicQueryRules.Validate(dynamicQuery, allowedFields);
+        if (errors.Count > 0)
         {
-            query = Filter(query, dynamicQuery.Filter);
+            throw new DynamicQueryException(string.Join(" ", errors));
         }
 
-        if (dynamicQuery.Sort is not null && dynamicQuery.Sort.Any())
+        try
         {
-            query = Sort(query, dynamicQuery.Sort);
-        }
+            if (dynamicQuery.Filter is not null)
+            {
+                query = Filter(query, dynamicQuery.Filter);
+            }
 
-        return query;
+            if (dynamicQuery.Sort is not null && dynamicQuery.Sort.Any())
+            {
+                query = Sort(query, dynamicQuery.Sort);
+            }
+
+            return query;
+        }
+        catch (Exception exception) when (exception is ParseException or ArgumentException or InvalidOperationException or FormatException)
+        {
+            throw new DynamicQueryException("The filter or sort doesn't match the list's fields or values.", exception);
+        }
     }
 
     private static IQueryable<T> Filter<T>(IQueryable<T> queryable, Filter filter)
