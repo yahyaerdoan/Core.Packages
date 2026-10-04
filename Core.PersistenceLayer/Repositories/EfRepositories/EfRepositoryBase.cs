@@ -174,7 +174,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
     public async Task<TEntity> UpdateAsync(TEntity entity)
     {
         entity.UpdatedDate = DateTimeOffset.UtcNow;
-        _ = Context.Update(entity);
+        AttachForUpdate(entity);
         _ = await Context.SaveChangesAsync();
         return entity;
     }
@@ -186,7 +186,11 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
             entity.UpdatedDate = DateTimeOffset.UtcNow;
         }
 
-        Context.UpdateRange(entities);
+        foreach (TEntity entity in entities)
+        {
+            AttachForUpdate(entity);
+        }
+
         _ = await Context.SaveChangesAsync();
         return entities;
     }
@@ -274,8 +278,21 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
             }
         }
 
-        _ = Context.Update(entity);
+        AttachForUpdate(entity);
     }
+
+    /// <summary>
+    /// Marks an entity the context doesn't track yet as modified (with everything reachable from it). An entity loaded with tracking is
+    /// left to the change tracker, so SaveChanges writes only the rows and columns that actually changed.
+    /// </summary>
+    protected void AttachForUpdate(object entity)
+    {
+        if (Context.Entry(entity).State == EntityState.Detached)
+        {
+            _ = Context.Update(entity);
+        }
+    }
+
     protected IQueryable<object> GetRelationLoaderQuery(IQueryable query)
     {
         return query.Cast<object>().Where(x => !((IEntityTimeStamps)x).DeletedDate.HasValue);
