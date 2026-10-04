@@ -1,7 +1,13 @@
 ﻿namespace Core.SecurityLayer.JsonWebTokens.Concretions;
 
+/// <summary>JWT settings bound from the "TokenOptions" section by AddTokenOptions.</summary>
 public class TokenOption
 {
+    public const string SectionName = "TokenOptions";
+
+    /// <summary>HMAC-SHA512 signing needs a key of at least 64 bytes.</summary>
+    public const int MinSecurityKeyBytes = 64;
+
     public string Audience { get; set; }
 
     public string Issuer { get; set; }

@@ -11,16 +11,14 @@ namespace Core.CrossCuttingConcernLayer.Loggings.Serilogs.Loggers;
 
 public class MsSqlLogger : BaseLoggerService
 {
-    //private readonly IConfiguration _configuration;
     public MsSqlLogger(IConfiguration configuration)
     {
-        //_configuration = configuration;
         MsSqlConfiguration msSqlConfiguration = configuration.GetSection("SeriLogConfigurations:MsSqlLogConfiguration").Get<MsSqlConfiguration>() ?? throw new InvalidOperationException(SerilogMessage.NullOptionsMessage);
 
         MSSqlServerSinkOptions mSSqlServerSinkOptions = new()
         {
             TableName = msSqlConfiguration.TableName,
-            AutoCreateSqlDatabase = msSqlConfiguration.AutoCreateSqlTable,
+            AutoCreateSqlTable = msSqlConfiguration.AutoCreateSqlTable,
         };
         ColumnOptions columnOptions = new();
         Logger logger = new LoggerConfiguration()
