@@ -8,6 +8,7 @@ using Core.PersistenceLayer.Pagings.Paging;
 using Core.PersistenceLayer.Repositories.Entities;
 using Core.PersistenceLayer.Repositories.IRepositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query;
 
@@ -132,9 +133,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
             queryable = queryable.Where(predicate);
         }
 
-        return orderBy != null
-            ? await orderBy(queryable).ToPaginateAsync(index, size, cancellationToken)
-            : await queryable.ToPaginateAsync(index, size, cancellationToken);
+        return await (orderBy ?? OrderById)(queryable).ToPaginateAsync(index, size, cancellationToken);
     }
 
     public async Task<Paginate<TEntity>> GetListByDynamicAsync(DynamicQuery dynamicQuery,
@@ -142,7 +141,7 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
         Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null, int index = 0, int size = 10,
         bool withDeleted = false, bool enableTracking = false, CancellationToken cancellationToken = default)
     {
-        IQueryable<TEntity> queryable = Query().ToDynamic(dynamicQuery);
+        IQueryable<TEntity> queryable = Query();
         if (!enableTracking)
         {
             queryable = queryable.AsNoTracking();
@@ -163,7 +162,12 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
             queryable = queryable.Where(predicate);
         }
 
-        return await queryable.ToPaginateAsync(index, size, cancellationToken);
+        if (dynamicQuery.Sort is null || !dynamicQuery.Sort.Any())
+        {
+            queryable = (orderBy ?? OrderById)(queryable);
+        }
+
+        return await queryable.ToDynamic(dynamicQuery).ToPaginateAsync(index, size, cancellationToken);
     }
 
     public IQueryable<TEntity> Query()
@@ -184,10 +188,6 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
         foreach (TEntity entity in entities)
         {
             entity.UpdatedDate = DateTimeOffset.UtcNow;
-        }
-
-        foreach (TEntity entity in entities)
-        {
             AttachForUpdate(entity);
         }
 
@@ -244,37 +244,29 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
                 continue;
             }
 
-            object? navValue = navigation.PropertyInfo.GetValue(entity);
             if (navigation.IsCollection)
             {
-                if (navValue == null)
-                {
-                    IQueryable query = Context.Entry(entity).Collection(navigation.PropertyInfo.Name).Query();
-                    navValue = await GetRelationLoaderQuery(query).ToListAsync();
-                    if (navValue == null)
-                    {
-                        continue;
-                    }
-                }
+                CollectionEntry collection = Context.Entry(entity).Collection(navigation.PropertyInfo.Name);
+                IEnumerable children = collection.IsLoaded && navigation.PropertyInfo.GetValue(entity) is IEnumerable loaded
+                    ? loaded.Cast<object>().ToList()
+                    : await GetRelationLoaderQuery(collection.Query()).ToListAsync();
 
-                foreach (IEntityTimeStamps navValueItem in (IEnumerable)navValue)
+                foreach (IEntityTimeStamps child in children)
                 {
-                    await SetEntityAsSoftDeletedAsync(navValueItem);
+                    await SetEntityAsSoftDeletedAsync(child);
                 }
             }
             else
             {
-                if (navValue == null)
-                {
-                    IQueryable query = Context.Entry(entity).Reference(navigation.PropertyInfo.Name).Query();
-                    navValue = await GetRelationLoaderQuery(query).FirstOrDefaultAsync();
-                    if (navValue == null)
-                    {
-                        continue;
-                    }
-                }
+                ReferenceEntry reference = Context.Entry(entity).Reference(navigation.PropertyInfo.Name);
+                object? child = reference.IsLoaded
+                    ? navigation.PropertyInfo.GetValue(entity)
+                    : await GetRelationLoaderQuery(reference.Query()).FirstOrDefaultAsync();
 
-                await SetEntityAsSoftDeletedAsync((IEntityTimeStamps)navValue);
+                if (child is IEntityTimeStamps timeStamped)
+                {
+                    await SetEntityAsSoftDeletedAsync(timeStamped);
+                }
             }
         }
 
@@ -292,6 +284,9 @@ public class EfRepositoryBase<TEntity, TEntityId, TContext>(TContext context) :
             _ = Context.Update(entity);
         }
     }
+
+    /// <summary>Default order for paging when the caller gives none, so pages are stable across calls.</summary>
+    protected static IOrderedQueryable<TEntity> OrderById(IQueryable<TEntity> queryable) => queryable.OrderBy(e => e.Id);
 
     protected IQueryable<object> GetRelationLoaderQuery(IQueryable query)
     {
