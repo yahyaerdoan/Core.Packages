@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.Json;
 using Core.ApplicationLayer.Pipelines.Loggings.Abstractions;
 using Core.CrossCuttingConcernLayer.Loggings.Parameters;
@@ -17,13 +16,11 @@ public class LogResultAddingBehavior<TRequest, TResponse>(IHttpContextAccessor h
     where TRequest : IRequest<TResponse>, ILogResultRequest
     where TResponse : IOperationResult
 {
-    private const string RedactedValue = "***REDACTED***";
-
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         TResponse response = await next(cancellationToken);
 
-        List<LogParameter> logParameters = [new() { Type = request.GetType().Name, Value = Redact(request) }];
+        List<LogParameter> logParameters = [new() { Type = request.GetType().Name, Value = RequestRedactor<TRequest>.Redact(request) }];
         LogDetail logDetail = new()
         {
             MethodName = next.Method.Name,
@@ -50,17 +47,5 @@ public class LogResultAddingBehavior<TRequest, TResponse>(IHttpContextAccessor h
         }
 
         return response;
-    }
-
-    private static readonly PropertyInfo[] Properties = typeof(TRequest).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-    private static readonly PropertyInfo[] SensitiveProperties =
-        Properties.Where(p => p.GetCustomAttribute<SensitiveDataAttribute>() is not null).ToArray();
-
-    private static object Redact(TRequest request)
-    {
-        return SensitiveProperties.Length == 0
-            ? request
-            : Properties.ToDictionary(p => p.Name, p => SensitiveProperties.Contains(p) ? RedactedValue : p.GetValue(request));
     }
 }

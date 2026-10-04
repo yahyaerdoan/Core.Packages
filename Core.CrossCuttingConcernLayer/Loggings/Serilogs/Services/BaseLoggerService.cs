@@ -2,9 +2,10 @@
 
 namespace Core.CrossCuttingConcernLayer.Loggings.Serilogs.Services;
 
-public abstract class BaseLoggerService
+/// <summary>Serilog-backed logger; register as a singleton so the container disposes it on shutdown and buffered events are flushed.</summary>
+public abstract class BaseLoggerService : IDisposable
 {
-    protected ILogger Logger { get; set; } = null!;
+    protected ILogger Logger { get; set; } = Serilog.Core.Logger.None;
 
     protected BaseLoggerService() { }
 
@@ -41,5 +42,19 @@ public abstract class BaseLoggerService
     public void Error(string message)
     {
         Logger.Error(message);
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            (Logger as IDisposable)?.Dispose();
+        }
     }
 }

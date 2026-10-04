@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
@@ -17,7 +16,8 @@ namespace Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheBehaviors;
 public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache distributedCache, IOptions<CacheSetting> cacheSettings, ILogger<CacheAddingBehavior<TRequest, TResponse>> logger, IConnectionMultiplexer? redisConnectionMultiplexer = null) 
     : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICacheAddRequest
 {
-    private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_keyLocks = new();
+    private const int LockStripeCount = 64;
+    private static readonly SemaphoreSlim[] s_keyLocks = [.. Enumerable.Range(0, LockStripeCount).Select(_ => new SemaphoreSlim(1, 1))];
 
     private readonly CacheSetting _cacheSettings = cacheSettings.Value;
 
@@ -36,7 +36,7 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache 
             return deserializedResponse;
         }
 
-        SemaphoreSlim localLock = s_keyLocks.GetOrAdd(request.CacheKey, _ => new SemaphoreSlim(1, 1));
+        SemaphoreSlim localLock = s_keyLocks[(int)((uint)StringComparer.Ordinal.GetHashCode(request.CacheKey) % LockStripeCount)];
         await localLock.WaitAsync(cancellationToken);
         try
         {
@@ -167,8 +167,8 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache 
     private static async Task AddCacheKeyToGroupAtomicAsync(IConnectionMultiplexer redis, string cacheGroupKey, string cacheKey, TimeSpan slidingExpiration)
     {
         IDatabase redisDatabase = redis.GetDatabase();
-        string groupSetKey = $"{cacheGroupKey}:members";
-        string groupExpirationKey = $"{cacheGroupKey}SlidingExpiration";
+        string groupSetKey = CacheGroupKeys.Members(cacheGroupKey);
+        string groupExpirationKey = CacheGroupKeys.SlidingExpiration(cacheGroupKey);
 
         _ = await redisDatabase.SetAddAsync(groupSetKey, cacheKey);
 
@@ -197,7 +197,7 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache 
 
         byte[] newCacheGroupCache = JsonSerializer.SerializeToUtf8Bytes(cacheKeysInGroup);
 
-        byte[]? cacheGroupCacheSlidingExpirationCache = await distributedCache.GetAsync($"{cacheGroupKey}SlidingExpiration", cancellationToken);
+        byte[]? cacheGroupCacheSlidingExpirationCache = await distributedCache.GetAsync(CacheGroupKeys.SlidingExpiration(cacheGroupKey), cancellationToken);
 
         int? cacheGroupCacheSlidingExpirationValue = cacheGroupCacheSlidingExpirationCache != null
             ? Convert.ToInt32(Encoding.UTF8.GetString(cacheGroupCacheSlidingExpirationCache), CultureInfo.InvariantCulture)
@@ -214,7 +214,7 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache 
             new() { SlidingExpiration = TimeSpan.FromSeconds(Convert.ToDouble(cacheGroupCacheSlidingExpirationValue, CultureInfo.InvariantCulture)) };
 
         await distributedCache.SetAsync(cacheGroupKey, newCacheGroupCache, cacheOptions, cancellationToken);
-        await distributedCache.SetAsync($"{cacheGroupKey}SlidingExpiration", serializeCachedGroupSlidingExpirationData, cacheOptions, cancellationToken);
+        await distributedCache.SetAsync(CacheGroupKeys.SlidingExpiration(cacheGroupKey), serializeCachedGroupSlidingExpirationData, cacheOptions, cancellationToken);
 
         LogAddedToCacheGroup(cacheGroupKey);
         LogAddedToCacheGroupSlidingExpiration(cacheGroupKey);
