@@ -4,4 +4,7 @@ namespace Core.PersistenceLayer.Repositories.Entities;
 public static class QueryFilterNames
 {
     public const string SoftDelete = "SoftDelete";
+
+    /// <summary>Tenant isolation; lift it only through IgnoreTenantFilter, never IgnoreQueryFilters directly.</summary>
+    public const string Tenant = "Tenant";
 }
