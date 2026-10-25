@@ -15,7 +15,9 @@ public class FileLogger : BaseLoggerService
 
         string logFilePath = string.Format(CultureInfo.InvariantCulture, format: "{0}{1}", arg0: Directory.GetCurrentDirectory() + logConfiguration.FolderPath, arg1: ".txt");
 
-        Logger = new LoggerConfiguration()
+        const string outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
+
+        LoggerConfiguration loggerConfiguration = new LoggerConfiguration()
             .WriteTo.File(
                 logFilePath,
                 rollingInterval: RollingInterval.Day,
@@ -25,7 +27,13 @@ public class FileLogger : BaseLoggerService
                 buffered: true,
                 flushToDiskInterval: TimeSpan.FromSeconds(1),
                 formatProvider: CultureInfo.InvariantCulture,
-                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-            .CreateLogger();
+                outputTemplate: outputTemplate);
+
+        if (logConfiguration.WriteToConsole)
+        {
+            loggerConfiguration = loggerConfiguration.WriteTo.Console(formatProvider: CultureInfo.InvariantCulture, outputTemplate: outputTemplate);
+        }
+
+        Logger = loggerConfiguration.CreateLogger();
     }
 }

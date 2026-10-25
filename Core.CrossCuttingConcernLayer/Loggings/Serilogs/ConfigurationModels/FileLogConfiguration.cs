@@ -10,6 +10,9 @@ public class FileLogConfiguration
     /// <summary>How many log files to keep; older ones are deleted.</summary>
     public int RetainedFileCountLimit { get; set; } = 31;
 
+    /// <summary>Also write to stdout, so container hosts (Railway, Docker) show the logs.</summary>
+    public bool WriteToConsole { get; set; }
+
     public FileLogConfiguration()
     {
         FolderPath = string.Empty;
