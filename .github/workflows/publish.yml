@@ -5,17 +5,25 @@ on:
     branches: [ master, beta ]
   workflow_dispatch: {}
 
+# One publish at a time, so two merges can't compute the same version.
+concurrency:
+  group: publish-nuget
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write
       packages: write
       id-token: write
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -24,8 +32,18 @@ jobs:
       - name: Resolve package version
         id: version
         run: |
-          version="1.0.${{ github.run_number }}"
+          # Next stable = last release tag + 1, so stable versions never skip numbers.
+          last=$(git tag --list 'v1.0.*' | grep -E '^v1\.0\.[0-9]+$' | cut -d. -f3 | sort -n | tail -n1)
 
+          if [ -z "$last" ]; then
+            # No release tag yet: continue from the highest stable version on nuget.org.
+            last=$(curl -fsS https://api.nuget.org/v3-flatcontainer/core.applicationlayer/index.json \
+              | jq -r '.versions[]' | grep -E '^1\.0\.[0-9]+$' | cut -d. -f3 | sort -n | tail -n1)
+          fi
+
+          version="1.0.$(( ${last:-0} + 1 ))"
+
+          # Beta is a preview of the next stable version.
           if [ "${{ github.ref_name }}" = "beta" ]; then
             version="${version}-beta.${{ github.run_number }}"
           fi
@@ -96,3 +114,13 @@ jobs:
               --source "https://api.nuget.org/v3/index.json" \
               --skip-duplicate
           done
+
+      # ==========================================
+      # Release tag (stable only): the next version counts from it
+      # ==========================================
+
+      - name: Tag the release
+        if: github.ref_name == 'master'
+        run: |
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
