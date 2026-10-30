@@ -4,7 +4,7 @@ using ResultHandler.Core.Base;
 
 namespace Core.ApplicationLayer.Extensions;
 
-/// <summary>Turns a failed <see cref="IdentityResult"/> into a field-scoped <see cref="OperationResult"/>, the same shape FluentValidation failures already produce via <see cref="ResultHandler.Core.Abstractions.IFieldFailureFactory{TSelf}"/>.</summary>
+/// <summary>Turns a failed <see cref="IdentityResult"/> into a field-scoped <see cref="OperationResult"/>, the same shape FluentValidation failures already produce via <see cref="ResultHandler.Core.Abstractions.IResultFailureFactory{TSelf}"/>.</summary>
 public static class IdentityResultExtensions
 {
     private static readonly IReadOnlyDictionary<string, string> DefaultFieldByErrorCode = new Dictionary<string, string>
@@ -28,9 +28,9 @@ public static class IdentityResultExtensions
     };
 
     /// <summary>
-    /// Groups <paramref name="result"/>'s errors into a fieldErrors dictionary. <paramref name="fieldByErrorCode"/>
+    /// Groups <paramref name="result"/>'s errors into an errors map keyed by field. <paramref name="fieldByErrorCode"/>
     /// overrides the default code-to-field map for a specific call site (e.g. renaming "Password" to
-    /// "CurrentPassword" for a change-password command); a code neither map knows falls back to "General".
+    /// "CurrentPassword" for a change-password command); a code neither map knows goes under the general key "".
     /// </summary>
     public static OperationResult ToOperationResult(this IdentityResult result, IReadOnlyDictionary<string, string>? fieldByErrorCode = null)
         => OperationResult.Failure(BuildFieldErrors(result, fieldByErrorCode));
@@ -42,6 +42,6 @@ public static class IdentityResultExtensions
     private static Dictionary<string, IReadOnlyList<string>> BuildFieldErrors(IdentityResult result, IReadOnlyDictionary<string, string>? fieldByErrorCode)
         => result.Errors
         .GroupBy(error => fieldByErrorCode?.GetValueOrDefault(error.Code) ?? DefaultFieldByErrorCode
-        .GetValueOrDefault(error.Code, "General"))
+        .GetValueOrDefault(error.Code, string.Empty))
         .ToDictionary(group => group.Key, IReadOnlyList<string> (group) => [.. group.Select(e => e.Description)]);
 }
