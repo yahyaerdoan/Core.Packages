@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Core.CrossCuttingConcernLayer.ExceptionHandlings.Constants;
 using Core.CrossCuttingConcernLayer.ExceptionHandlings.Exceptions;
 using Core.CrossCuttingConcernLayer.ExceptionHandlings.Handlers;
 using Microsoft.AspNetCore.Diagnostics;
@@ -22,18 +23,23 @@ public static class ExceptionHandlingServiceCollectionExtensions
     /// Registers the exception handling used by <see cref="ExceptionMiddlewareExtensions.UseConfigureCustomExceptionMiddleware"/>: every unhandled
     /// exception is logged with the registered <see cref="Loggings.Serilogs.Services.BaseLoggerService"/>, then answered by ResultHandler as Problem
     /// Details. Business, query and database exceptions map to 400/409; anything else is a 500 whose message reaches the client only in Development.
+    /// Every answer carries an error code: <see cref="ExceptionErrorCodes"/> for the mapped exceptions, ResultHandler's built-in codes for the rest.
     /// </summary>
     public static IServiceCollection AddConfigureCustomExceptionHandling(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IExceptionHandler, ExceptionLoggingHandler>());
-        return services.AddResultExceptionHandler(options => options
-            .Map<BusinessRuleException>(exception => Result.Conflict(exception.Message))
-            .Map<DynamicQueryException>(exception => Result.BadRequest(exception.Message))
-            .Map<JsonException>((exception, httpContext) => Result.BadRequest(IsDevelopment(httpContext) ? exception.Message : InvalidJsonMessage))
-            .Map<DbUpdateConcurrencyException>(_ => Result.Conflict(ConcurrencyMessage))
-            .Map<DbUpdateException>(_ => Result.Conflict(ConflictMessage)));
+        return services.AddResultExceptionHandler(options =>
+        {
+            options.IncludeErrorCodes = true;
+            _ = options
+                .Map<BusinessRuleException>(exception => Result.Conflict(exception.Message).WithCode(ExceptionErrorCodes.BusinessRuleViolated))
+                .Map<DynamicQueryException>(exception => Result.BadRequest(exception.Message).WithCode(ExceptionErrorCodes.InvalidQuery))
+                .Map<JsonException>((exception, httpContext) => Result.BadRequest(IsDevelopment(httpContext) ? exception.Message : InvalidJsonMessage).WithCode(ExceptionErrorCodes.InvalidJson))
+                .Map<DbUpdateConcurrencyException>(_ => Result.Conflict(ConcurrencyMessage).WithCode(ExceptionErrorCodes.ConcurrencyConflict))
+                .Map<DbUpdateException>(_ => Result.Conflict(ConflictMessage).WithCode(ExceptionErrorCodes.DataConflict));
+        });
     }
 
     private static bool IsDevelopment(HttpContext httpContext)
