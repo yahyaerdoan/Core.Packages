@@ -27,9 +27,12 @@ public static partial class ApiBehaviorExtensions
                     entries = jsonPathEntries;
                 }
 
-                string[] errors = [.. entries.Select(e => FormatFieldError(e.Key, e.Error))];
+                Dictionary<string, IReadOnlyList<string>> fieldErrors = entries
+                    .SelectMany(e => ToFieldErrors(e.Key, e.Error))
+                    .GroupBy(e => e.Field, StringComparer.Ordinal)
+                    .ToDictionary(group => group.Key, IReadOnlyList<string> (group) => [.. group.Select(e => e.Message).Distinct()], StringComparer.Ordinal);
 
-                IOperationResult result = OperationResult.Failure(errors);
+                IOperationResult result = OperationResult.Failure(fieldErrors);
                 return result.ToActionResult(context.HttpContext);
             });
 
@@ -40,20 +43,29 @@ public static partial class ApiBehaviorExtensions
     private static partial Regex MissingPropertiesRegex();
 
     // Raw System.Text.Json messages leak .NET type names/internals — collapse to plain messages.
-    private static string FormatFieldError(string key, ModelError error)
+    private static IEnumerable<(string Field, string Message)> ToFieldErrors(string key, ModelError error)
     {
-        if (key == "$" && MissingPropertiesRegex().Match(error.ErrorMessage) is { Success: true } match)
+        if (key == "$")
         {
-            string fields = match.Groups["props"].Value.Replace("'", "");
-            return $"{fields}: This field is required.";
+            if (MissingPropertiesRegex().Match(error.ErrorMessage) is { Success: true } match)
+            {
+                return match.Groups["props"].Value
+                    .Replace("'", "")
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(field => (ToFieldName(field), "This field is required."));
+            }
+
+            return [(string.Empty, "The request body is missing or has an invalid format.")];
         }
 
         if (key.StartsWith("$.", StringComparison.Ordinal))
         {
-            string field = key[2..];
-            return $"{field}: The value is missing or has an invalid format.";
+            return [(ToFieldName(key[2..]), "The value is missing or has an invalid format.")];
         }
 
-        return $"{key}: {error.ErrorMessage}";
+        return [(ToFieldName(key), error.ErrorMessage)];
     }
+
+    private static string ToFieldName(string path)
+        => string.Join('.', path.Split('.').Select(segment => segment.Length == 0 ? segment : char.ToUpperInvariant(segment[0]) + segment[1..]));
 }
