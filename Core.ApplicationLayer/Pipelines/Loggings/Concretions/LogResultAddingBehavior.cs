@@ -32,6 +32,7 @@ public class LogResultAddingBehavior<TRequest, TResponse>(IHttpContextAccessor h
                 Status = response.Status.ToString(),
                 response.Title,
                 response.Detail,
+                response.Code,
                 response.Errors,
             },
         };
