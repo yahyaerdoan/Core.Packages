@@ -3,11 +3,14 @@ using Core.CrossCuttingConcernLayer.Loggings.Parameters;
 using Core.CrossCuttingConcernLayer.Loggings.Serilogs.Services;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
+using ResultHandler.AspNetCore.Exceptions;
+using ResultHandler.Mapping;
 
 namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Handlers;
 
-/// <summary>Writes every unhandled exception to <see cref="BaseLoggerService"/>, then lets the next handler write the response.</summary>
-internal sealed class ExceptionLoggingHandler(BaseLoggerService baseLoggerService) : IExceptionHandler
+/// <summary>Writes every unhandled exception to <see cref="BaseLoggerService"/> (as an error when it is answered with a 5xx, as a warning otherwise), then lets the next handler write the response.</summary>
+internal sealed class ExceptionLoggingHandler(BaseLoggerService baseLoggerService, IOptions<ResultExceptionHandlerOptions> options) : IExceptionHandler
 {
     public ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
@@ -19,7 +22,16 @@ internal sealed class ExceptionLoggingHandler(BaseLoggerService baseLoggerServic
             User = httpContext.User.Identity?.Name ?? "?",
         };
 
-        baseLoggerService.Error(JsonSerializer.Serialize(logDetail));
+        string json = JsonSerializer.Serialize(logDetail);
+        if ((int)options.Value.Resolve(exception, httpContext).Status.ToHttpStatusCode() >= StatusCodes.Status500InternalServerError)
+        {
+            baseLoggerService.Error(json);
+        }
+        else
+        {
+            baseLoggerService.Warn(json);
+        }
+
         return ValueTask.FromResult(false);
     }
 }

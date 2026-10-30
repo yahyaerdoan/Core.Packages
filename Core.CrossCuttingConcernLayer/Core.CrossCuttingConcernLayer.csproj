@@ -13,8 +13,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.12" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="ResponseResultHandler" Version="15.0.0" />
-    <PackageReference Include="ResponseResultHandler.AspNetCore" Version="15.0.0" />
+    <PackageReference Include="ResponseResultHandler" Version="16.1.1" />
+    <PackageReference Include="ResponseResultHandler.AspNetCore" Version="16.1.1" />
     <PackageReference Include="Serilog" Version="4.4.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
