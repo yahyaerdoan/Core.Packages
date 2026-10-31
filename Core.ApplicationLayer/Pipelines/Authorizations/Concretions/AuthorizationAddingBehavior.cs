@@ -1,4 +1,6 @@
+using Core.ApplicationLayer.Extensions;
 using Core.ApplicationLayer.Pipelines.Authorizations.Abstractions;
+using Core.ApplicationLayer.Pipelines.Authorizations.Constants;
 using Core.SecurityLayer.Constants;
 using Core.SecurityLayer.Extensions;
 using MediatR;
@@ -17,7 +19,7 @@ public class AuthorizationAddingBehavior<TRequest, TResponse>(IHttpContextAccess
     {
         if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated is not true)
         {
-            return ResultFailureFactory.Unauthorized<TResponse>("You are not authenticated.");
+            return ResultFailureFactory.Unauthorized<TResponse>("You are not authenticated.").WithErrorCode(AuthorizationErrorCodes.Unauthenticated);
         }
 
         if (request.Roles.Length == 0)
@@ -31,6 +33,6 @@ public class AuthorizationAddingBehavior<TRequest, TResponse>(IHttpContextAccess
         bool isMatched = userPermissionClaims.Contains(PermissionClaimTypes.FullAccess)
             || (request.AllowTenantBypass && userPermissionClaims.Contains(PermissionClaimTypes.TenantFullAccess))
             || request.Roles.Any(role => userRoleClaims.Contains(role) || userPermissionClaims.Contains(role));
-        return !isMatched ? ResultFailureFactory.Forbidden<TResponse>("You are not authorized.") : await next(cancellationToken);
+        return !isMatched ? ResultFailureFactory.Forbidden<TResponse>("You are not authorized.").WithErrorCode(AuthorizationErrorCodes.Forbidden) : await next(cancellationToken);
     }
 }
