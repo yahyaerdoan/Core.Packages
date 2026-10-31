@@ -1,13 +1,10 @@
-﻿using System.Text.Json;
-using Core.CrossCuttingConcernLayer.ExceptionHandlings.Constants;
+﻿using Core.CrossCuttingConcernLayer.ExceptionHandlings.Constants;
 using Core.CrossCuttingConcernLayer.ExceptionHandlings.Exceptions;
 using Core.CrossCuttingConcernLayer.ExceptionHandlings.Handlers;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using ResultHandler.AspNetCore.Extensions;
 using ResultHandler.Facade;
 
@@ -15,7 +12,6 @@ namespace Core.CrossCuttingConcernLayer.ExceptionHandlings.Extensions;
 
 public static class ExceptionHandlingServiceCollectionExtensions
 {
-    private const string InvalidJsonMessage = "The request body is not valid JSON.";
     private const string ConcurrencyMessage = "This record was modified by someone else. Please reload and try again.";
     private const string ConflictMessage = "This operation conflicts with existing data. Please check your input and try again.";
 
@@ -36,12 +32,8 @@ public static class ExceptionHandlingServiceCollectionExtensions
             _ = options
                 .Map<BusinessRuleException>(exception => Result.Conflict(exception.Message).WithCode(ExceptionErrorCodes.BusinessRuleViolated))
                 .Map<DynamicQueryException>(exception => Result.BadRequest(exception.Message).WithCode(ExceptionErrorCodes.InvalidQuery))
-                .Map<JsonException>((exception, httpContext) => Result.BadRequest(IsDevelopment(httpContext) ? exception.Message : InvalidJsonMessage).WithCode(ExceptionErrorCodes.InvalidJson))
                 .Map<DbUpdateConcurrencyException>(_ => Result.Conflict(ConcurrencyMessage).WithCode(ExceptionErrorCodes.ConcurrencyConflict))
                 .Map<DbUpdateException>(_ => Result.Conflict(ConflictMessage).WithCode(ExceptionErrorCodes.DataConflict));
         });
     }
-
-    private static bool IsDevelopment(HttpContext httpContext)
-        => httpContext.RequestServices.GetRequiredService<IHostEnvironment>().IsDevelopment();
 }
