@@ -8,23 +8,23 @@ public static class DynamicQueryRules
     public const int MaxFilters = 20;
     public const int MaxSorts = 5;
 
-    internal static readonly string[] Directions = ["asc", "desc"];
-    internal static readonly string[] Logics = ["and", "or"];
+    internal static readonly string[] Directions = [SortDirections.Ascending, SortDirections.Descending];
+    internal static readonly string[] Logics = [FilterLogics.And, FilterLogics.Or];
 
     internal static readonly Dictionary<string, string> Operators = new()
     {
-        { "eq", "=" },
-        { "neq", "!=" },
-        { "lt", "<" },
-        { "lte", "<=" },
-        { "gt", ">" },
-        { "gte", ">=" },
-        { "isnull", "== null" },
-        { "isnotnull", "!= null" },
-        { "startswith", "StartsWith" },
-        { "endswith", "EndsWith" },
-        { "contains", "Contains" },
-        { "doesnotcontain", "Contains" }
+        { FilterOperators.Equal, "=" },
+        { FilterOperators.NotEqual, "!=" },
+        { FilterOperators.LessThan, "<" },
+        { FilterOperators.LessThanOrEqual, "<=" },
+        { FilterOperators.GreaterThan, ">" },
+        { FilterOperators.GreaterThanOrEqual, ">=" },
+        { FilterOperators.IsNull, "== null" },
+        { FilterOperators.IsNotNull, "!= null" },
+        { FilterOperators.StartsWith, "StartsWith" },
+        { FilterOperators.EndsWith, "EndsWith" },
+        { FilterOperators.Contains, "Contains" },
+        { FilterOperators.DoesNotContain, "Contains" }
     };
 
     /// <summary>Problems with the query, empty when it can be applied. With <paramref name="allowedFields"/>, every filter and sort field must be one of them (case-insensitive).</summary>
