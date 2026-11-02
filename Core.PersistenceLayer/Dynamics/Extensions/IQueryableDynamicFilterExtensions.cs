@@ -120,13 +120,13 @@ public static class IQueryableDynamicFilterExtensions
 
         if (!string.IsNullOrEmpty(filter.Value))
         {
-            _ = filter.Operator == "doesnotcontain"
+            _ = filter.Operator == FilterOperators.DoesNotContain
                 ? where.Append(CultureInfo.InvariantCulture, $"(!np({filter.Field}).{comparison}(@{index}))")
                 : comparison is "StartsWith" or "EndsWith" or "Contains"
                     ? where.Append(CultureInfo.InvariantCulture, $"(np({filter.Field}).{comparison}(@{index}))")
                     : where.Append(CultureInfo.InvariantCulture, $"np({filter.Field}) {comparison} @{index}");
         }
-        else if (filter.Operator is "isnull" or "isnotnull")
+        else if (filter.Operator is FilterOperators.IsNull or FilterOperators.IsNotNull)
         {
             _ = where.Append(CultureInfo.InvariantCulture, $"np({filter.Field}) {comparison}");
         }
