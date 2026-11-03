@@ -20,10 +20,11 @@ public class LogResultAddingBehavior<TRequest, TResponse>(IHttpContextAccessor h
     {
         TResponse response = await next(cancellationToken);
 
-        List<LogParameter> logParameters = [new() { Type = request.GetType().Name, Value = RequestRedactor<TRequest>.Redact(request) }];
+        List<LogParameter> logParameters = [new() { Name = nameof(request), Type = request.GetType().Name, Value = RequestRedactor<TRequest>.Redact(request) }];
         LogDetail logDetail = new()
         {
-            MethodName = next.Method.Name,
+            FullName = typeof(TRequest).FullName ?? typeof(TRequest).Name,
+            MethodName = typeof(TRequest).Name,
             Parameters = logParameters,
             User = httpContextAccessor.HttpContext?.User.Identity?.Name ?? "?",
             Result = new
