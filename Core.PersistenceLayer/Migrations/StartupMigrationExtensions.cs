@@ -11,8 +11,8 @@ public static partial class StartupMigrationExtensions
     /// <summary>
     /// Applies the pending migrations of every context registered with <see cref="StartupMigrationServiceCollectionExtensions.AddStartupMigration{TContext}"/>,
     /// one after another; call it once at startup, before the app serves requests. A migration that would destroy data (see <see cref="MigrationDataLoss"/>)
-    /// stops startup unless <paramref name="allowDataLoss"/> is set for that deploy, so dropping or narrowing is always a decision someone made; a database with
-    /// no migrations applied yet has nothing to lose and is created in full. Concurrent instances are safe: EF Core takes a lock while it migrates.
+    /// stops startup unless <paramref name="allowDataLoss"/> is set for that deploy, so dropping or narrowing is always a decision someone made; a context with
+    /// none of its own migrations applied yet has nothing to lose (contexts may share one history table) and is created in full. Concurrent instances are safe: EF Core takes a lock while it migrates.
     /// </summary>
     /// <exception cref="InvalidOperationException">A pending migration would destroy data and <paramref name="allowDataLoss"/> is false.</exception>
     public static async Task MigrateDatabasesAsync(this IServiceProvider services, bool allowDataLoss = false, CancellationToken cancellationToken = default)
@@ -33,7 +33,7 @@ public static partial class StartupMigrationExtensions
                 continue;
             }
 
-            var hasData = (await context.Database.GetAppliedMigrationsAsync(cancellationToken)).Any();
+            var hasData = (await context.Database.GetAppliedMigrationsAsync(cancellationToken)).Intersect(context.Database.GetMigrations()).Any();
             var losses = hasData ? DataLossOf(context, pending) : [];
             if (losses.Count > 0 && !allowDataLoss)
             {
