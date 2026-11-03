@@ -18,7 +18,7 @@ internal sealed class ExceptionLoggingHandler(BaseLoggerService baseLoggerServic
         {
             ExceptionMessage = exception.Message,
             MethodName = httpContext.Features.Get<IExceptionHandlerFeature>()?.Endpoint?.DisplayName ?? httpContext.Request.Path.Value ?? "?",
-            Parameters = [new LogParameter { Type = exception.GetType().Name, Value = exception.ToString() }],
+            Parameters = [new LogParameter { Name = nameof(exception), Type = exception.GetType().Name, Value = exception.ToString() }],
             User = httpContext.User.Identity?.Name ?? "?",
         };
 
