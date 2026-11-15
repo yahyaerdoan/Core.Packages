@@ -1,15 +1,15 @@
-using Core.ApplicationLayer.Extensions;
-using Core.ApplicationLayer.Pipelines.Validations.Constants;
 using FluentValidation;
 using FluentValidation.Results;
 using MediatR;
 using ResultHandler.Core.Abstractions;
+using ResultHandler.ErrorCodes;
+using ResultHandler.Facade;
 
 namespace Core.ApplicationLayer.Pipelines.Validations.Concretions;
 
 public class ValidationAddingBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
-    where TResponse : IOperationResult, IResultFailureFactory<TResponse>
+    where TResponse : class, IOperationResult, IResultFailureFactory<TResponse>
 {
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
@@ -29,6 +29,6 @@ public class ValidationAddingBehavior<TRequest, TResponse>(IEnumerable<IValidato
             .GroupBy(failure => failure.PropertyName)
             .ToDictionary(group => group.Key, IReadOnlyList<string> (group) => [.. group.Select(failure => failure.ErrorMessage).Distinct()]);
 
-        return TResponse.Failure(fieldErrors).WithErrorCode(ValidationErrorCodes.Failed);
+        return TResponse.Failure(fieldErrors).WithCode(ValidationErrorCodes.Failed);
     }
 }
