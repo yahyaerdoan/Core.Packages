@@ -4,6 +4,7 @@ using MediatR;
 using ResultHandler.Core.Abstractions;
 using ResultHandler.ErrorCodes;
 using ResultHandler.Facade;
+using ResultHandler.FluentValidation;
 
 namespace Core.ApplicationLayer.Pipelines.Validations.Concretions;
 
@@ -25,10 +26,6 @@ public class ValidationAddingBehavior<TRequest, TResponse>(IEnumerable<IValidato
             return await next(cancellationToken);
         }
 
-        Dictionary<string, IReadOnlyList<string>> fieldErrors = failures
-            .GroupBy(failure => failure.PropertyName)
-            .ToDictionary(group => group.Key, IReadOnlyList<string> (group) => [.. group.Select(failure => failure.ErrorMessage).Distinct()]);
-
-        return TResponse.Failure(fieldErrors).WithCode(ValidationErrorCodes.Failed);
+        return new ValidationResult(failures).ToFailure<TResponse>().WithCode(ValidationErrorCodes.Failed);
     }
 }
