@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Security.Claims;
 using Core.SecurityLayer.Constants;
 
 namespace Core.SecurityLayer.Extensions;
@@ -26,5 +27,11 @@ public static class ClaimPrincipalExtension
     {
         return TKey.Parse(claimsPrincipal?.Claims(ClaimTypes.NameIdentifier)?.FirstOrDefault()
             ?? throw new InvalidOperationException("Principal has no NameIdentifier claim."), null);
+    }
+
+    /// <summary>False for an anonymous caller or a malformed id, instead of throwing like <see cref="GetUserId{TKey}"/>.</summary>
+    public static bool TryGetUserId<TKey>(this ClaimsPrincipal? claimsPrincipal, [MaybeNullWhen(false)] out TKey userId) where TKey : IParsable<TKey>
+    {
+        return TKey.TryParse(claimsPrincipal?.FindFirst(ClaimTypes.NameIdentifier)?.Value, null, out userId);
     }
 }

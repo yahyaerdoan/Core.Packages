@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Core.ApplicationLayer.Pipelines.Cachings.Abstractions;
 using Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheSettings;
+using Core.PersistenceLayer.MultiTenancy;
 using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
@@ -13,7 +14,9 @@ using StackExchange.Redis;
 
 namespace Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheBehaviors;
 
-public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache distributedCache, IOptions<CacheSetting> cacheSettings, ILogger<CacheAddingBehavior<TRequest, TResponse>> logger, IConnectionMultiplexer? redisConnectionMultiplexer = null) 
+/// <summary>Caches a successful response under the request's key. With an <see cref="ITenantContext"/> registered, keys are scoped to the tenant
+/// and an unknown tenant skips the cache.</summary>
+public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache distributedCache, IOptions<CacheSetting> cacheSettings, ILogger<CacheAddingBehavior<TRequest, TResponse>> logger, IConnectionMultiplexer? redisConnectionMultiplexer = null, ITenantContext? tenantContext = null)
     : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>, ICacheAddRequest
 {
     private const int LockStripeCount = 64;
@@ -23,33 +26,36 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache 
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        if (request.ByPassCache)
+        if (request.ByPassCache || TenantCacheKeys.Prefix(tenantContext) is not string prefix)
         {
             return await next(cancellationToken);
         }
 
-        byte[]? cachedResponse = await distributedCache.GetAsync(request.CacheKey, cancellationToken);
+        string cacheKey = prefix + request.CacheKey;
+        string? cacheGroupKey = request.CacheGroupKey is string groupKey ? prefix + groupKey : null;
 
-        if (cachedResponse != null && TryDeserialize(cachedResponse, request.CacheKey, out TResponse? deserializedResponse))
+        byte[]? cachedResponse = await distributedCache.GetAsync(cacheKey, cancellationToken);
+
+        if (cachedResponse != null && TryDeserialize(cachedResponse, cacheKey, out TResponse? deserializedResponse))
         {
-            LogFetchedFromCache(request.CacheKey);
+            LogFetchedFromCache(cacheKey);
             return deserializedResponse;
         }
 
-        SemaphoreSlim localLock = s_keyLocks[(int)((uint)StringComparer.Ordinal.GetHashCode(request.CacheKey) % LockStripeCount)];
+        SemaphoreSlim localLock = s_keyLocks[(int)((uint)StringComparer.Ordinal.GetHashCode(cacheKey) % LockStripeCount)];
         await localLock.WaitAsync(cancellationToken);
         try
         {
-            cachedResponse = await distributedCache.GetAsync(request.CacheKey, cancellationToken);
-            if (cachedResponse != null && TryDeserialize(cachedResponse, request.CacheKey, out TResponse? doubleCheckedResponse))
+            cachedResponse = await distributedCache.GetAsync(cacheKey, cancellationToken);
+            if (cachedResponse != null && TryDeserialize(cachedResponse, cacheKey, out TResponse? doubleCheckedResponse))
             {
-                LogFetchedFromCache(request.CacheKey);
+                LogFetchedFromCache(cacheKey);
                 return doubleCheckedResponse;
             }
 
             return redisConnectionMultiplexer is IConnectionMultiplexer redis
-                ? await HandleWithDistributedLockAsync(request, redis, next, cancellationToken)
-                : await GetResponseAndAddToCache(request, next, cancellationToken);
+                ? await HandleWithDistributedLockAsync(request, cacheKey, cacheGroupKey, redis, next, cancellationToken)
+                : await GetResponseAndAddToCache(request, cacheKey, cacheGroupKey, next, cancellationToken);
         }
         finally
         {
@@ -57,10 +63,10 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache 
         }
     }
 
-    private async Task<TResponse> HandleWithDistributedLockAsync(TRequest request, IConnectionMultiplexer redis, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    private async Task<TResponse> HandleWithDistributedLockAsync(TRequest request, string cacheKey, string? cacheGroupKey, IConnectionMultiplexer redis, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         IDatabase redisDatabase = redis.GetDatabase();
-        string lockKey = $"lock:{request.CacheKey}";
+        string lockKey = $"lock:{cacheKey}";
         string lockToken = Guid.NewGuid().ToString("N");
         TimeSpan lockTimeout = TimeSpan.FromSeconds(_cacheSettings.DistributedLockTimeoutInSeconds);
 
@@ -75,10 +81,10 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache 
             {
                 await Task.Delay(pollInterval, cancellationToken);
 
-                byte[]? cachedResponse = await distributedCache.GetAsync(request.CacheKey, cancellationToken);
-                if (cachedResponse != null && TryDeserialize(cachedResponse, request.CacheKey, out TResponse? deserializedResponse))
+                byte[]? cachedResponse = await distributedCache.GetAsync(cacheKey, cancellationToken);
+                if (cachedResponse != null && TryDeserialize(cachedResponse, cacheKey, out TResponse? deserializedResponse))
                 {
-                    LogFetchedFromCache(request.CacheKey);
+                    LogFetchedFromCache(cacheKey);
                     return deserializedResponse;
                 }
             }
@@ -88,7 +94,7 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache 
 
         try
         {
-            return await GetResponseAndAddToCache(request, next, cancellationToken);
+            return await GetResponseAndAddToCache(request, cacheKey, cacheGroupKey, next, cancellationToken);
         }
         finally
         {
@@ -120,13 +126,13 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache 
         }
     }
 
-    private async Task<TResponse> GetResponseAndAddToCache(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    private async Task<TResponse> GetResponseAndAddToCache(TRequest request, string cacheKey, string? cacheGroupKey, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         TResponse response = await next(cancellationToken);
 
         if (response is IOperationResult { IsSuccessful: false })
         {
-            LogSkippedFailedResponse(request.CacheKey);
+            LogSkippedFailedResponse(cacheKey);
             return response;
         }
 
@@ -141,13 +147,13 @@ public partial class CacheAddingBehavior<TRequest, TResponse>(IDistributedCache 
 
         byte[] serializedData = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(response));
 
-        await distributedCache.SetAsync(request.CacheKey, serializedData, distributedCacheEntryOptions, cancellationToken);
+        await distributedCache.SetAsync(cacheKey, serializedData, distributedCacheEntryOptions, cancellationToken);
 
-        LogAddedToCache(request.CacheKey);
+        LogAddedToCache(cacheKey);
 
-        if (request.CacheGroupKey is string cacheGroupKey)
+        if (cacheGroupKey is not null)
         {
-            await AddCacheKeyToGroup(cacheGroupKey, request.CacheKey, slidingExpiration, cancellationToken);
+            await AddCacheKeyToGroup(cacheGroupKey, cacheKey, slidingExpiration, cancellationToken);
         }
 
         return response;
