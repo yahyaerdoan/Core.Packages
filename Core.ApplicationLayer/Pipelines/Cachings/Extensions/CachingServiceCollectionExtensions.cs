@@ -1,12 +1,15 @@
+using Core.ApplicationLayer.Pipelines.Cachings.Abstractions;
+using Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheBehaviors;
 using Core.ApplicationLayer.Pipelines.Cachings.Concretions.CacheSettings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Core.ApplicationLayer.Pipelines.Cachings.Extensions;
 
 public static class CachingServiceCollectionExtensions
 {
-    /// <summary>Binds <see cref="CacheSetting"/> from the "CacheSettings" section once; the app fails at startup when the section is missing or a value isn't positive.</summary>
+    /// <summary>Binds <see cref="CacheSetting"/> from the "CacheSettings" section once (the app fails at startup when the section is missing or a value isn't positive) and registers <see cref="ICacheRemover"/>.</summary>
     public static IServiceCollection AddCacheSettings(this IServiceCollection services, IConfiguration configuration)
     {
         _ = services.AddOptions<CacheSetting>()
@@ -15,6 +18,7 @@ public static class CachingServiceCollectionExtensions
             .Validate(s => s.AbsoluteExpirationCapInDays > 0, $"{CacheSetting.SectionName}:{nameof(CacheSetting.AbsoluteExpirationCapInDays)} must be greater than 0.")
             .Validate(s => s.DistributedLockTimeoutInSeconds > 0, $"{CacheSetting.SectionName}:{nameof(CacheSetting.DistributedLockTimeoutInSeconds)} must be greater than 0.")
             .ValidateOnStart();
+        services.TryAddScoped<ICacheRemover, CacheRemover>();
         return services;
     }
 }
